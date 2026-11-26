@@ -58,6 +58,28 @@ export async function syncVerifiedDictionaries({ silent = false } = {}) {
     }
   }
 
+  // Ensure corrected Sundanese "Rampes" e-pepet pronunciation & notes stay synced in existing databases
+  await execute(
+    `UPDATE vocabulary SET pronunciation = 'ram-pês (e pepet seperti "senang")'
+     WHERE regional_word = 'Rampes' AND pronunciation = 'ram-pés'`
+  );
+  await execute(
+    `UPDATE questions SET pronunciation_guide = 'ram-pês (e pepet seperti "senang")',
+       explanation = REPLACE(explanation, '/ram-pés/', '/ram-pês (e pepet)/')
+     WHERE regional_text = 'Rampes' AND pronunciation_guide = 'ram-pés'`
+  );
+  await execute(
+    `UPDATE learning_modules
+     SET vocabulary_json = REPLACE(vocabulary_json, '"ram-pés"', '"ram-pês (e pepet seperti \\"senang\\")"'),
+         pronunciation_notes = 'Basa Sunda membedakan 3 bunyi vokal: "e" pepet (seperti "sepatu") pada kata "rampes", "wilujeng", dan "punten"; "é" taling (seperti "sate") pada "énjing" dan "pangéstu"; serta "eu" khas Sunda (bibir mendatar) pada "anjeun" dan "peuyeum".'
+     WHERE vocabulary_json LIKE '%"ram-pés"%'`
+  );
+  await execute(
+    `UPDATE regional_languages
+     SET pronunciation_information = 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "rampes" & "punten"), "é" taling (seperti "sate" pada "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").'
+     WHERE language_name = 'Basa Sunda' AND pronunciation_information LIKE '%"enak"%'`
+  );
+
   if (!silent && (addedEntries > 0 || verifiedLangs > 0)) {
     console.log(
       `Synced verified dictionaries across 38 provinces (+${addedEntries} entries, ${verifiedLangs} languages marked verified).`

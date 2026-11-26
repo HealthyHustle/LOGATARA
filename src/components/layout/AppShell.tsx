@@ -129,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 title={user.full_name}
               >
                 <img
-                  src={user.avatar_url?.startsWith('http') ? user.avatar_url : assetUrl(user.avatar_url || '/assets/characters/tara.png')}
+                  src={assetUrl(user.avatar_url || '/assets/characters/tara.png')}
                   alt={`Profil ${user.full_name}`}
                   width={36}
                   height={36}

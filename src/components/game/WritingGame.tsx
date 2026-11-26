@@ -20,9 +20,50 @@ export function WritingGame({
   const [arrangedIndices, setArrangedIndices] = useState<Record<number, number[]>>({});
   // For translate typing questions: free text value
   const [typedAnswers, setTypedAnswers] = useState<Record<number, string>>({});
-  const [showHint, setShowHint] = useState<Record<number, boolean>>({});
+  // Progressive subtle hint level per question: 0 = hidden, 1 = light clue, 2 = medium clue (never spoils full answer!)
+  const [hintTier, setHintTier] = useState<Record<number, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const cycleHint = (qId: number) => {
+    setHintTier((prev) => {
+      const curr = prev[qId] || 0;
+      const next = curr >= 2 ? 0 : curr + 1;
+      return { ...prev, [qId]: next };
+    });
+  };
+
+  const buildSubtleHint = (q: GameActivity['questions'][number], tier: number) => {
+    const clean = q.correct_answer.replace(/[?!.,]/g, '').trim();
+    const words = clean.split(/\s+/).filter(Boolean);
+    const isArrange = q.question_type === 'writing_arrange';
+
+    if (isArrange) {
+      if (tier === 1) {
+        return `Kalimat ini terdiri dari ${words.length} kata. Coba mulai dari kata sapaan atau subjek utama terlebih dahulu.`;
+      }
+      const firstInitial = words[0]?.[0]?.toUpperCase() || '';
+      const lastInitial = words[words.length - 1]?.[0]?.toUpperCase() || '';
+      return `Struktur: ${words.length} kata • Kata pertama diawali huruf "${firstInitial}…" dan kata terakhir diawali huruf "${lastInitial}…".`;
+    }
+
+    // Translation typing: mask letters without exposing phonetic spelling or full word
+    const lightMask = words
+      .map((w) => (w.length <= 2 ? `${w[0]}_` : `${w[0]}${'_'.repeat(Math.min(5, w.length - 1))}`))
+      .join('  ');
+
+    if (tier === 1) {
+      return `Pola jawaban: ${words.length} kata (${words.map((w) => `${w.length} huruf`).join(' + ')}) • Huruf awal: ${lightMask}`;
+    }
+
+    const mediumMask = words
+      .map((w) =>
+        w.length <= 3 ? `${w[0]}_${w[w.length - 1]}` : `${w[0]}${'_'.repeat(w.length - 2)}${w[w.length - 1]}`
+      )
+      .join('  ');
+    const syllables = (q.pronunciation_guide || '').split(/[-\s/]+/).filter(Boolean).length;
+    return `Petunjuk tambahan: ${words.length} kata${syllables > 0 ? ` (±${syllables} suku kata)` : ''} • Huruf awal & akhir: ${mediumMask}`;
+  };
 
   const toggleArrangeToken = (qId: number, idx: number) => {
     if (result?.passed) return;
@@ -88,18 +129,23 @@ export function WritingGame({
 
               <button
                 type="button"
-                onClick={() => setShowHint((p) => ({ ...p, [q.id]: !p[q.id] }))}
+                onClick={() => cycleHint(q.id)}
                 className="btn-parchment px-3 py-1.5 text-xs inline-flex items-center gap-1"
               >
                 <Lightbulb className="w-3.5 h-3.5 text-tertiary-gold" />
-                <span>Petunjuk</span>
+                <span>
+                  {(hintTier[q.id] || 0) === 0
+                    ? 'Petunjuk Ringan'
+                    : hintTier[q.id] === 1
+                      ? 'Petunjuk +1'
+                      : 'Tutup Petunjuk'}
+                </span>
               </button>
             </div>
 
-            {showHint[q.id] && (
+            {(hintTier[q.id] || 0) > 0 && (
               <div className="p-3 rounded-2xl bg-tertiary-fixed/60 text-xs text-on-tertiary-fixed font-semibold">
-                💡 Pelafalan kunci: /{q.pronunciation_guide}/ • Kata awal:{' '}
-                <strong>"{q.correct_answer.split(' ')[0]}"</strong>
+                💡 {buildSubtleHint(q, hintTier[q.id])}
               </div>
             )}
 

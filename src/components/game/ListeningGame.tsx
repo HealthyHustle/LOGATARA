@@ -18,10 +18,19 @@ export function ListeningGame({
 }: ListeningGameProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [playingKey, setPlayingKey] = useState<string | null>(null);
-  const [showPhonetic, setShowPhonetic] = useState<Record<number, boolean>>({});
+  const [showClue, setShowClue] = useState<Record<number, boolean>>({});
+  const [audioFailedFor, setAudioFailedFor] = useState<Record<number, boolean>>({});
   const [audioFallbackMsg, setAudioFallbackMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const buildMaskedAudioClue = (phrase: string) => {
+    const words = phrase.replace(/[?!.,]/g, '').trim().split(/\s+/).filter(Boolean);
+    const masked = words
+      .map((w) => (w.length <= 2 ? `${w[0]}_` : `${w[0]}${'_'.repeat(Math.min(5, w.length - 1))}`))
+      .join('  ');
+    return `${masked} (${words.length} kata — coba tombol "Putar Pelan" untuk menyimak suku katanya)`;
+  };
 
   const playAudio = (qId: number, text: string, slow = false) => {
     setAudioFallbackMsg(null);
@@ -33,7 +42,8 @@ export function ListeningGame({
       onError: (msg) => {
         setPlayingKey(null);
         setAudioFallbackMsg(msg);
-        setShowPhonetic((prev) => ({ ...prev, [qId]: true }));
+        setAudioFailedFor((prev) => ({ ...prev, [qId]: true }));
+        setShowClue((prev) => ({ ...prev, [qId]: true }));
       },
     });
   };
@@ -84,11 +94,11 @@ export function ListeningGame({
 
               <button
                 type="button"
-                onClick={() => setShowPhonetic((p) => ({ ...p, [q.id]: !p[q.id] }))}
+                onClick={() => setShowClue((p) => ({ ...p, [q.id]: !p[q.id] }))}
                 className="text-xs font-bold text-on-surface-variant hover:text-primary inline-flex items-center gap-1"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>{showPhonetic[q.id] ? 'Sembunyikan Teks' : 'Bantuan Teks'}</span>
+                <span>{showClue[q.id] ? 'Sembunyikan Petunjuk' : 'Petunjuk Audio'}</span>
               </button>
             </div>
 
@@ -112,12 +122,20 @@ export function ListeningGame({
                 <span>{playingKey === `${q.id}-slow` ? 'Memutar Pelan...' : 'Putar Pelan (0.7x)'}</span>
               </button>
 
-              {showPhonetic[q.id] && (
-                <div className="px-3.5 py-2 rounded-xl bg-surface-ivory border border-on-surface-bark/10 text-sm">
-                  <span className="font-display font-bold text-primary">"{q.regional_text}"</span>
-                  <span className="ml-2 font-mono text-xs text-secondary-terracotta">
-                    /{q.pronunciation_guide}/
-                  </span>
+              {showClue[q.id] && (
+                <div className="px-3.5 py-2 rounded-xl bg-surface-ivory border border-on-surface-bark/10 text-xs sm:text-sm">
+                  {audioFailedFor[q.id] ? (
+                    <>
+                      <span className="font-display font-bold text-primary">"{q.regional_text}"</span>
+                      <span className="ml-2 font-mono text-xs text-secondary-terracotta">
+                        /{q.pronunciation_guide}/
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-on-surface-bark">
+                      💡 Petunjuk pola kata: <span className="font-mono text-primary">{buildMaskedAudioClue(q.regional_text)}</span>
+                    </span>
+                  )}
                 </div>
               )}
             </div>

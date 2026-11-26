@@ -213,12 +213,13 @@ router.put('/profile/active-language', requireAuth, async (req, res, next) => {
   }
 });
 
-// Update user profile & language preferences
+// Update user profile, avatar (3D character or uploaded photo), & language preferences
 router.put('/profile', requireAuth, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const fullName = String(req.body?.fullName || '').trim();
     const bio = String(req.body?.bio || '').trim();
+    const avatarUrlRaw = req.body?.avatarUrl !== undefined ? String(req.body.avatarUrl).trim() : null;
     const knownLanguageIds = Array.isArray(req.body?.knownLanguageIds)
       ? req.body.knownLanguageIds.map(Number).filter(Boolean)
       : null;
@@ -228,14 +229,28 @@ router.put('/profile', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Nama lengkap minimal 2 karakter.' });
     }
 
-    if (fullName || bio !== undefined) {
+    let safeAvatarUrl = null;
+    if (avatarUrlRaw) {
+      const allowedPreset = /^\/assets\/characters\/[a-z0-9\-_]+\.png$/i.test(avatarUrlRaw);
+      const allowedDataUri = /^data:image\/(png|jpeg|jpg|webp);base64,[a-z0-9+/=]+$/i.test(avatarUrlRaw);
+      if (!allowedPreset && !allowedDataUri) {
+        return res.status(400).json({ error: 'Format foto profil tidak didukung. Gunakan PNG, JPG, atau WebP.' });
+      }
+      if (avatarUrlRaw.length > 450_000) {
+        return res.status(400).json({ error: 'Ukuran foto terlalu besar. Pilih gambar yang lebih kecil.' });
+      }
+      safeAvatarUrl = avatarUrlRaw;
+    }
+
+    if (fullName || bio !== undefined || safeAvatarUrl) {
       await execute(
         `UPDATE user_profiles
          SET full_name = COALESCE(NULLIF(?, ''), full_name),
              bio = ?,
+             avatar_url = COALESCE(?, avatar_url),
              updated_at = CURRENT_TIMESTAMP
          WHERE user_id = ?`,
-        [fullName, bio || 'Penjelajah bahasa dan budaya Nusantara', userId]
+        [fullName, bio || 'Penjelajah bahasa dan budaya Nusantara', safeAvatarUrl, userId]
       );
     }
 

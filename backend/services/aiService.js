@@ -1,4 +1,5 @@
 import { queryAll, queryOne } from '../database/db.js';
+import { buildSmartLocalChatReply } from './localChatEngine.js';
 
 export function getAiProviderStatus() {
   if (process.env.GEMINI_API_KEY?.trim()) {
@@ -152,129 +153,61 @@ async function callOpenAIProvider(systemPrompt, historyMessages, userMessage) {
  * so answers are truthful, educational, and NEVER fabricated.
  */
 async function buildVerifiedLocalFallbackReply(user, currentLanguage, userMessage) {
-  const cleaned = userMessage.toLowerCase().trim();
-  const langName = currentLanguage?.language_name || 'Basa Sunda';
-
-  // Extract meaningful search terms
-  const stopWords = new Set([
-    'apa', 'arti', 'bahasa', 'daerah', 'dalam', 'untuk', 'yang', 'dan', 'atau', 'di', 'ke', 'dari',
-    'bagaimana', 'cara', 'ucap', 'pelafalan', 'tolong', 'jelaskan', 'contoh', 'kalimat', 'kata',
-    'tara', 'logatara', 'tentang', 'budaya', 'saya', 'kamu', 'itu', 'ini', 'adalah', 'bisa', 'mau',
-    'terjemahkan', 'translate', 'artinya', 'sunda', 'jawa', 'bali', 'minang', 'batak', 'bugis', 'betawi', 'banjar',
+  const [languages, provinces, vocabulary, dailyPhrasesRows] = await Promise.all([
+    queryAll(
+      `SELECT rl.*, p.province_name
+       FROM regional_languages rl JOIN provinces p ON p.id = rl.province_id`
+    ),
+    queryAll('SELECT * FROM provinces'),
+    queryAll(
+      `SELECT v.*, rl.language_name, p.province_name
+       FROM vocabulary v
+       JOIN regional_languages rl ON rl.id = v.language_id
+       JOIN provinces p ON p.id = rl.province_id
+       WHERE v.verification_status = 'verified'`
+    ),
+    queryAll(
+      `SELECT dp.*, rl.language_name, p.province_name
+       FROM daily_phrases dp
+       JOIN regional_languages rl ON rl.id = dp.language_id
+       JOIN provinces p ON p.id = dp.province_id`
+    ),
   ]);
-  const tokens = cleaned
-    .replace(/[^a-z0-9\s'-]/gi, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length >= 3 && !stopWords.has(w));
 
-  // Detect if user asks about a specific language by name
-  const mentionedLangs = await queryAll(
-    `SELECT rl.id, rl.language_name, rl.language_description, rl.pronunciation_information, rl.verification_status, p.province_name, p.cultural_information
-     FROM regional_languages rl
-     JOIN provinces p ON p.id = rl.province_id`
-  );
-  const matchedLang = mentionedLangs.find((l) => {
-    const simple = l.language_name.toLowerCase().replace(/^bahasa\s+|^basa\s+/, '');
-    return cleaned.includes(simple) || cleaned.includes(l.province_name.toLowerCase());
+  let currentModule = null;
+  if (currentLanguage) {
+    const modRow = await queryOne(
+      `SELECT lm.title, lm.cultural_context, lm.pronunciation_notes, lm.vocabulary_json
+       FROM learning_modules lm
+       JOIN learning_levels ll ON ll.id = lm.level_id
+       WHERE ll.language_id = ? AND ll.level_number = ?`,
+      [currentLanguage.id, user.current_level_number || 1]
+    );
+    if (modRow) {
+      currentModule = {
+        ...modRow,
+        vocabulary: JSON.parse(modRow.vocabulary_json || '[]'),
+      };
+    }
+  }
+
+  const dailyPhrases = dailyPhrasesRows.map((d) => ({
+    ...d,
+    example_dialogue: JSON.parse(d.example_dialogue_json || '[]'),
+  }));
+
+  return buildSmartLocalChatReply({
+    user,
+    currentLanguage,
+    languages: languages.map((l) => ({ ...l, has_full_curriculum: Boolean(l.has_full_curriculum) })),
+    provinces,
+    vocabulary,
+    currentModule,
+    dailyPhrases,
+    userMessage,
+    modeFooter:
+      '\n\n*(Mode Pengetahuan Lokal Terverifikasi — tambahkan `GEMINI_API_KEY` atau `OPENAI_API_KEY` di `.env` untuk percakapan AI generatif bebas.)*',
   });
-  const targetLangId = matchedLang?.id || currentLanguage?.id || null;
-
-  // 1. Search verified vocabulary matches
-  let vocabMatches = [];
-  if (tokens.length > 0) {
-    const likePattern = `%${tokens[0]}%`;
-    vocabMatches = await queryAll(
-      `SELECT v.regional_word, v.indonesian_meaning, v.pronunciation, v.example_sentence, v.example_translation,
-              v.register_level, rl.language_name, p.province_name
-       FROM vocabulary v
-       JOIN regional_languages rl ON rl.id = v.language_id
-       JOIN provinces p ON p.id = rl.province_id
-       WHERE v.verification_status = 'verified'
-         AND (LOWER(v.regional_word) LIKE ? OR LOWER(v.indonesian_meaning) LIKE ? OR LOWER(v.example_sentence) LIKE ?)
-       ORDER BY CASE WHEN v.language_id = ? THEN 0 ELSE 1 END
-       LIMIT 5`,
-      [likePattern, likePattern, likePattern, targetLangId || -1]
-    );
-
-    if (vocabMatches.length === 0 && tokens.length > 1) {
-      const p2 = `%${tokens[1]}%`;
-      vocabMatches = await queryAll(
-        `SELECT v.regional_word, v.indonesian_meaning, v.pronunciation, v.example_sentence, v.example_translation,
-                v.register_level, rl.language_name, p.province_name
-         FROM vocabulary v
-         JOIN regional_languages rl ON rl.id = v.language_id
-         JOIN provinces p ON p.id = rl.province_id
-         WHERE v.verification_status = 'verified'
-           AND (LOWER(v.regional_word) LIKE ? OR LOWER(v.indonesian_meaning) LIKE ?)
-         LIMIT 5`,
-        [p2, p2]
-      );
-    }
-  }
-
-  // Handle common explicit queries like "terima kasih", "halo", "apa kabar", "level", "petunjuk", "budaya"
-  if (vocabMatches.length === 0 && (cleaned.includes('terima kasih') || cleaned.includes('makasih'))) {
-    vocabMatches = await queryAll(
-      `SELECT v.regional_word, v.indonesian_meaning, v.pronunciation, v.example_sentence, v.example_translation,
-              v.register_level, rl.language_name, p.province_name
-       FROM vocabulary v
-       JOIN regional_languages rl ON rl.id = v.language_id
-       JOIN provinces p ON p.id = rl.province_id
-       WHERE LOWER(v.indonesian_meaning) LIKE '%terima kasih%'
-       LIMIT 6`
-    );
-  } else if (vocabMatches.length === 0 && (cleaned.includes('kabar') || cleaned.includes('sapa') || cleaned.includes('salam'))) {
-    vocabMatches = await queryAll(
-      `SELECT v.regional_word, v.indonesian_meaning, v.pronunciation, v.example_sentence, v.example_translation,
-              v.register_level, rl.language_name, p.province_name
-       FROM vocabulary v
-       JOIN regional_languages rl ON rl.id = v.language_id
-       JOIN provinces p ON p.id = rl.province_id
-       WHERE LOWER(v.indonesian_meaning) LIKE '%kabar%' OR LOWER(v.indonesian_meaning) LIKE '%salam%'
-       ORDER BY CASE WHEN v.language_id = ? THEN 0 ELSE 1 END
-       LIMIT 5`,
-      [targetLangId || -1]
-    );
-  }
-
-  if (vocabMatches.length > 0) {
-    const lines = vocabMatches.map(
-      (v) =>
-        `• **${v.regional_word}** (${v.language_name} — ${v.register_level})\n  Arti: *${v.indonesian_meaning}* | Pelafalan: \`/${v.pronunciation}/\`\n  Contoh: "${v.example_sentence}" (${v.example_translation})`
-    );
-    return `Berikut kosakata terverifikasi yang Tara temukan di pustaka LOGATARA:\n\n${lines.join('\n\n')}\n\n*(Catatan: Saat ini LOGATARA AI berjalan dalam Mode Pengetahuan Lokal karena \`GEMINI_API_KEY\` / \`OPENAI_API_KEY\` belum dikonfigurasi di server.)*`;
-  }
-
-  // 2. Check if user asks for level hints or current module help
-  if (cleaned.includes('level') || cleaned.includes('modul') || cleaned.includes('hint') || cleaned.includes('petunjuk') || cleaned.includes('latihan')) {
-    if (currentLanguage) {
-      const mod = await queryOne(
-        `SELECT lm.title, lm.cultural_context, lm.pronunciation_notes, lm.vocabulary_json
-         FROM learning_modules lm
-         JOIN learning_levels ll ON ll.id = lm.level_id
-         WHERE ll.language_id = ? AND ll.level_number = ?`,
-        [currentLanguage.id, user.current_level_number || 1]
-      );
-      if (mod) {
-        const vocab = JSON.parse(mod.vocabulary_json || '[]').slice(0, 3);
-        const tips = vocab.map((v) => `• **${v.word}** (/${v.pron}/) = ${v.meaning}`).join('\n');
-        return `Ini petunjuk untuk **${mod.title}** yang sedang kamu pelajari!\n\n**Kosakata Kunci:**\n${tips}\n\n**Tips Pelafalan:** ${mod.pronunciation_notes}\n\n**Konteks Budaya:** ${mod.cultural_context}\n\n*(Mode Pengetahuan Lokal — tambahkan API key AI di \`.env\` untuk percakapan AI generatif bebas.)*`;
-      }
-    }
-  }
-
-  // 3. Check if user mentioned a specific province or language
-  if (matchedLang) {
-    const statusNote =
-      matchedLang.verification_status === 'verified'
-        ? 'Bahasa ini sudah memiliki kurikulum terverifikasi penuh 7 level di LOGATARA!'
-        : 'Bahasa ini telah tercatat dalam katalog 38 provinsi LOGATARA, namun kosakata rincinya masih memerlukan verifikasi penutur asli & Balai Bahasa setempat agar tidak ada terjemahan yang keliru.';
-
-    return `**${matchedLang.language_name}** (${matchedLang.province_name})\n\n${matchedLang.language_description}\n\n**Catatan Pelafalan:** ${matchedLang.pronunciation_information}\n**Budaya Provinsi:** ${matchedLang.cultural_information}\n\n*Status Data:* ${statusNote}\n\n*(Mode Pengetahuan Lokal — konfigurasi \`GEMINI_API_KEY\` atau \`OPENAI_API_KEY\` di \`.env\` untuk respons AI penuh.)*`;
-  }
-
-  // 4. Honest helpful guidance
-  return `Halo ${user.full_name}! Tara siap membantumu belajar **${langName}** (Level ${user.current_level_number || 1}).\n\nSaat ini server berjalan dalam **Mode Pengetahuan Lokal** (API key Gemini/OpenAI belum dikonfigurasi di \`.env\`), sehingga Tara hanya menjawab berdasarkan kamus dan modul terverifikasi agar tidak pernah mengarang kosakata daerah.\n\nCoba tanyakan hal seperti:\n• *"Apa bahasa daerah untuk terima kasih?"*\n• *"Bagaimana cara menanyakan kabar dalam Basa Sunda atau Basa Jawa?"*\n• *"Berikan petunjuk untuk level saya sekarang"*\n• *"Ceritakan tentang budaya Bali atau Sumatera Barat"*`;
 }
 
 export async function generateChatResponse({ user, currentLanguage, historyMessages, userMessage }) {

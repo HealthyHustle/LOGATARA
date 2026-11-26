@@ -113,7 +113,7 @@ export function DashboardPage() {
       <section className="storybook-card p-5 sm:p-6 batik-watermark flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <img
-            src={profile.avatar_url?.startsWith('http') ? profile.avatar_url : assetUrl(profile.avatar_url || '/assets/characters/tara.png')}
+            src={assetUrl(profile.avatar_url || '/assets/characters/tara.png')}
             alt={`Avatar ${profile.full_name}`}
             width={64}
             height={64}

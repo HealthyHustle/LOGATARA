@@ -24,6 +24,26 @@ export function isSpeechRecognitionSupported(): boolean {
   return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
 }
 
+// Phonetic adjustments for browser id-ID TTS engines so regional words sound more natural
+// (e.g., Indonesian TTS often misreads "-es" in Sundanese "Rampes" as e-taling instead of e-pepet).
+const TTS_PRONUNCIATION_OVERRIDES: Array<[RegExp, string]> = [
+  [/\brampes\b/gi, 'rampes'],
+];
+
+function prepareSpeechText(rawText: string): string {
+  let out = rawText.trim();
+  // Indonesian TTS engines frequently pronounce final "-es" as /ɛs/ (like "sukses"/"akses").
+  // For Sundanese "Rampes" (e pepet /rampəs/), "rampeus" / "rampês" guides id-ID speech synthesis closer to schwa.
+  if (/^rampes[!.,?]*$/i.test(out)) {
+    return 'rampeus';
+  }
+  out = out.replace(/\brampes\b/gi, 'rampeus');
+  for (const [pattern, replacement] of TTS_PRONUNCIATION_OVERRIDES) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
 export function speakPhrase(
   text: string,
   options: { rate?: number; onStart?: () => void; onEnd?: () => void; onError?: (reason: string) => void } = {}
@@ -35,7 +55,7 @@ export function speakPhrase(
 
   try {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(prepareSpeechText(text));
     utterance.lang = 'id-ID';
     utterance.rate = options.rate ?? 0.9;
     utterance.pitch = 1.02;

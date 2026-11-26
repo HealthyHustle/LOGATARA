@@ -11,6 +11,7 @@ import {
 } from '../../../backend/database/data/curriculumDataExtra.js';
 import { VERIFIED_DICT_WEST } from '../../../backend/database/data/verifiedDictWest.js';
 import { VERIFIED_DICT_EAST } from '../../../backend/database/data/verifiedDictEast.js';
+import { buildSmartLocalChatReply } from '../../../backend/services/localChatEngine.js';
 import { assetUrl } from '../../utils/assets';
 
 const STORAGE_KEY = 'logatara_static_store_v1';
@@ -681,6 +682,14 @@ export async function handleStaticApiRequest<T = any>(
     const user = getAuthUser(store);
     if (body.fullName) user.full_name = String(body.fullName).trim();
     if (body.bio !== undefined) user.bio = String(body.bio).trim() || 'Penjelajah bahasa dan budaya Nusantara';
+    if (body.avatarUrl !== undefined && String(body.avatarUrl).trim()) {
+      const av = String(body.avatarUrl).trim();
+      if (av.length > 450_000) throw makeError('Ukuran foto terlalu besar. Pilih gambar yang lebih kecil.', 400);
+      user.avatar_url = av;
+    }
+    if (Array.isArray(body.knownLanguageIds)) {
+      user.known_language_ids = [...new Set(body.knownLanguageIds.map(Number).filter(Boolean))];
+    }
     if (body.targetLanguageId) {
       const lid = Number(body.targetLanguageId);
       user.current_language_id = lid;
@@ -1152,27 +1161,25 @@ export async function handleStaticApiRequest<T = any>(
     };
     store.chatMessages.push(userMsg);
 
-    const q = content.toLowerCase();
-    const stop = new Set(['apa', 'arti', 'bahasa', 'daerah', 'dalam', 'untuk', 'yang', 'dan', 'atau', 'cara', 'jelaskan', 'tara', 'logatara']);
-    const words = q.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !stop.has(w));
-    let hits: any[] = [];
-    if (q.includes('terima kasih') || q.includes('makasih')) {
-      hits = cat.vocabulary.filter((v: any) => v.indonesian_meaning.toLowerCase().includes('terima kasih')).slice(0, 6);
-    } else if (words.length > 0) {
-      hits = cat.vocabulary.filter((v: any) =>
-        words.some((w) => v.regional_word.toLowerCase().includes(w) || v.indonesian_meaning.toLowerCase().includes(w) || v.language_name.toLowerCase().includes(w))
-      ).slice(0, 5);
-    }
+    const currentLanguage =
+      cat.languages.find((l: any) => l.id === user.current_language_id) ||
+      cat.languages.find((l: any) => l.has_full_curriculum);
+    const currentLvObj = cat.levels.find(
+      (l: any) => l.language_id === currentLanguage?.id && l.level_number === (user.current_level_number || 1)
+    );
+    const currentModule = currentLvObj ? cat.modules.get(currentLvObj.id) || null : null;
 
-    let reply = '';
-    if (hits.length > 0) {
-      reply =
-        'Berikut kosakata terverifikasi yang Tara temukan di pustaka LOGATARA:\n\n' +
-        hits.map((v) => `• **${v.regional_word}** (${v.language_name} — ${v.province_name})\n  Arti: *${v.indonesian_meaning}* | Pelafalan: /${v.pronunciation}/`).join('\n\n');
-    } else {
-      const lang = cat.languages.find((l: any) => l.id === user.current_language_id);
-      reply = `Halo ${user.full_name}! Kamu sedang mempelajari **${lang?.language_name || 'Basa Sunda'}** (Level ${user.current_level_number || 1}). Coba tanyakan *"Apa bahasa daerah untuk terima kasih?"*, *"Apa arti Sampurasun?"*, atau sebutkan nama provinsi/bahasa Nusantara mana pun!`;
-    }
+    const reply = buildSmartLocalChatReply({
+      user,
+      currentLanguage,
+      languages: cat.languages,
+      provinces: cat.provinces,
+      vocabulary: cat.vocabulary,
+      currentModule,
+      dailyPhrases: cat.dailyPhrases,
+      userMessage: content,
+      modeFooter: '\n\n*(Mode Pengetahuan Lokal Terverifikasi — pustaka 38 provinsi & 78 bahasa daerah LOGATARA)*',
+    });
 
     const botMsg = {
       id: store.nextId++,
