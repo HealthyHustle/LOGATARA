@@ -2,7 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const isGhPages = process.env.VITE_GH_PAGES === 'true';
+
 export default defineConfig({
+  base: isGhPages ? '/BUDAYAGO/' : '/',
   plugins: [react()],
   resolve: {
     alias: {

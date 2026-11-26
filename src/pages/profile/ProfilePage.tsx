@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { speakPhrase } from '../../services/audio/speechService';
+import { assetUrl } from '../../utils/assets';
 import type { Achievement, RegionalLanguage } from '../../types';
 
 export function ProfilePage() {
@@ -114,7 +115,7 @@ export function ProfilePage() {
       <section className="storybook-card p-6 sm:p-8 batik-watermark flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
           <img
-            src={profile.avatar_url || '/assets/characters/tara.png'}
+            src={profile.avatar_url?.startsWith('http') ? profile.avatar_url : assetUrl(profile.avatar_url || '/assets/characters/tara.png')}
             alt={profile.full_name}
             width={96}
             height={96}

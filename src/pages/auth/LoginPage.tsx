@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, Compass, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDeferredFormValidation } from '../../hooks/useDeferredFormValidation';
+import { assetUrl } from '../../utils/assets';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -45,7 +46,7 @@ export function LoginPage() {
         {/* Left Diorama Hero */}
         <section className="lg:col-span-6 relative rounded-[2rem] overflow-hidden shadow-storybook-lg bg-primary text-on-primary flex flex-col justify-between min-h-[280px] lg:min-h-[560px]">
           <img
-            src="/assets/environments/kampung-nusantara.png"
+            src={assetUrl('/assets/environments/kampung-nusantara.png')}
             alt="Kampung Nusantara — Dunia Petualangan LOGATARA"
             width={1376}
             height={768}
@@ -57,7 +58,7 @@ export function LoginPage() {
           <div className="relative z-10 p-6">
             <div className="inline-flex bg-surface-ivory/95 backdrop-blur-md px-3.5 py-2 rounded-full shadow-md">
               <img
-                src="/assets/icons/logatara-logo.svg"
+                src={assetUrl('/assets/icons/logatara-logo.svg')}
                 alt="LOGATARA"
                 width={140}
                 height={35}
@@ -80,7 +81,7 @@ export function LoginPage() {
               </p>
             </div>
             <img
-              src="/assets/characters/tara-sprite.png"
+              src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Karakter Tara LOGATARA"
               width={542}
               height={883}

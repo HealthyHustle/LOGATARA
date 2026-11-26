@@ -20,6 +20,7 @@ import { SpeakingGame } from '../../components/game/SpeakingGame';
 import { ListeningGame } from '../../components/game/ListeningGame';
 import { ReadingGame } from '../../components/game/ReadingGame';
 import { WritingGame } from '../../components/game/WritingGame';
+import { assetUrl } from '../../utils/assets';
 import type { GameActivity, LearningModule } from '../../types';
 
 type TabKey = 'module' | 'speaking' | 'listening' | 'reading' | 'writing';
@@ -346,7 +347,7 @@ export function LevelPlayPage() {
         <section className="storybook-card p-6 bg-gradient-to-r from-primary to-primary-olive text-white flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/assets/characters/tara-sprite.png"
+              src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Tara siap melangkah"
               width={542}
               height={883}

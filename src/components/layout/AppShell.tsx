@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FloatingChatbot } from '../chatbot/FloatingChatbot';
+import { assetUrl } from '../../utils/assets';
 
 const DESKTOP_NAV = [
   { to: '/dashboard', label: 'Game', icon: Compass },
@@ -52,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/dashboard" className="flex items-center gap-2 shrink-0 group">
               <img
-                src="/assets/icons/logatara-logo.svg"
+                src={assetUrl('/assets/icons/logatara-logo.svg')}
                 alt="LOGATARA"
                 width={156}
                 height={39}
@@ -128,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 title={user.full_name}
               >
                 <img
-                  src={user.avatar_url || '/assets/characters/tara.png'}
+                  src={user.avatar_url?.startsWith('http') ? user.avatar_url : assetUrl(user.avatar_url || '/assets/characters/tara.png')}
                   alt={`Profil ${user.full_name}`}
                   width={36}
                   height={36}

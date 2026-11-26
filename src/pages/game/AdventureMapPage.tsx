@@ -17,6 +17,7 @@ import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdventureMapStage } from '../../components/game/AdventureMapStage';
 import { StorybookDialog } from '../../components/common/StorybookDialog';
+import { assetUrl } from '../../utils/assets';
 import type { AdventureLevel, Achievement, RegionalLanguage } from '../../types';
 
 interface MapApiResponse {
@@ -455,7 +456,7 @@ export function AdventureMapPage() {
         <div className="text-center space-y-5">
           <div className="flex justify-center items-center gap-4">
             <img
-              src="/assets/characters/tara-sprite.png"
+              src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Tara merayakan keberhasilanmu"
               width={542}
               height={883}

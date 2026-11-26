@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { assetUrl } from '../../utils/assets';
 import type { RegionalLanguage } from '../../types';
 
 export function OnboardingPage() {
@@ -110,7 +111,7 @@ export function OnboardingPage() {
             </p>
           </div>
           <img
-            src="/assets/characters/tara-sprite.png"
+            src={assetUrl('/assets/characters/tara-sprite.png')}
             alt="Tara menyambutmu"
             width={542}
             height={883}

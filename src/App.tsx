@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { isStaticHostingMode } from './services/api/client';
+import { assetUrl } from './utils/assets';
 import { AppShell } from './components/layout/AppShell';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -18,7 +20,7 @@ function FullScreenLoader() {
   return (
     <div className="min-h-screen bg-surface-parchment flex flex-col items-center justify-center gap-4 p-6">
       <img
-        src="/assets/icons/logatara-logo.svg"
+        src={assetUrl('/assets/icons/logatara-logo.svg')}
         alt="LOGATARA"
         width={180}
         height={45}
@@ -57,9 +59,11 @@ function PublicAuthRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const Router = isStaticHostingMode() ? HashRouter : BrowserRouter;
+
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route
             path="/register"
@@ -168,7 +172,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/register" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }

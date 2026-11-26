@@ -1,5 +1,13 @@
 const TOKEN_STORAGE_KEY = 'logatara_auth_token';
 
+export function isStaticHostingMode(): boolean {
+  if (import.meta.env.VITE_GH_PAGES === 'true') return true;
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    return true;
+  }
+  return false;
+}
+
 export function getStoredToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -31,6 +39,17 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // On static hosts without Node.js backend (e.g., GitHub Pages), seamlessly use the
+  // browser-persisted engine backed by the exact same verified 38-province & 78-language datasets.
+  if (isStaticHostingMode()) {
+    const { handleStaticApiRequest } = await import('./staticDemoBackend');
+    try {
+      return await handleStaticApiRequest<T>(endpoint, options);
+    } catch (err: any) {
+      throw new ApiError(err?.message || 'Permintaan gagal.', err?.status || 400, err?.data);
+    }
+  }
+
   const token = getStoredToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Minus, X, Sparkles, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { assetUrl } from '../../utils/assets';
 import type { ChatMessage } from '../../types';
 
 const QUICK_PROMPTS = [
@@ -128,7 +129,7 @@ export function FloatingChatbot() {
             <div className="bg-primary text-on-primary px-4 py-3.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
-                  src="/assets/characters/tara.png"
+                  src={assetUrl('/assets/characters/tara.png')}
                   alt="Tara LOGATARA AI"
                   width={40}
                   height={40}
@@ -304,7 +305,7 @@ export function FloatingChatbot() {
       >
         <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-tertiary-gold bg-surface-ivory shrink-0">
           <img
-            src="/assets/characters/tara.png"
+            src={assetUrl('/assets/characters/tara.png')}
             alt="Asisten LOGATARA AI"
             width={44}
             height={44}

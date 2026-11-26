@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Send, Sparkles, Trash2, Loader2, AlertCircle, Bot } from 'lucide-react';
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { assetUrl } from '../../utils/assets';
 import type { ChatMessage } from '../../types';
 
 const STARTER_QUESTIONS = [
@@ -77,7 +78,7 @@ export function ChatbotPage() {
       <section className="storybook-card p-5 sm:p-6 batik-watermark flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <img
-            src="/assets/characters/tara.png"
+            src={assetUrl('/assets/characters/tara.png')}
             alt="LOGATARA AI bersama Tara"
             width={64}
             height={64}

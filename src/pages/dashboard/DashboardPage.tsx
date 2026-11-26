@@ -22,6 +22,7 @@ import { apiRequest } from '../../services/api/client';
 import { speakPhrase } from '../../services/audio/speechService';
 import { StorybookDialog } from '../../components/common/StorybookDialog';
 import { TaraSprite } from '../../components/character/TaraSprite';
+import { assetUrl } from '../../utils/assets';
 import type {
   AdventureLevel,
   Achievement,
@@ -112,7 +113,7 @@ export function DashboardPage() {
       <section className="storybook-card p-5 sm:p-6 batik-watermark flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <img
-            src={profile.avatar_url || '/assets/characters/tara.png'}
+            src={profile.avatar_url?.startsWith('http') ? profile.avatar_url : assetUrl(profile.avatar_url || '/assets/characters/tara.png')}
             alt={`Avatar ${profile.full_name}`}
             width={64}
             height={64}
@@ -193,7 +194,7 @@ export function DashboardPage() {
         <div className="relative w-full overflow-x-auto">
           <div className="relative min-w-[700px] w-full aspect-[1376/768]">
             <img
-              src="/assets/environments/kampung-nusantara.png"
+              src={assetUrl('/assets/environments/kampung-nusantara.png')}
               alt="Diorama 3D Kampung Nusantara dengan Joglo, Tongkonan, Rumah Batik, Pasar Tradisional, dan Sawah Terasering"
               width={1376}
               height={768}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { assetUrl } from '../../utils/assets';
 
 interface TaraSpriteProps {
   state: 'idle' | 'walking' | 'celebrating';
@@ -75,7 +76,7 @@ export function TaraSprite({
           }}
         >
           <img
-            src="/assets/characters/tara-sprite.png"
+            src={assetUrl('/assets/characters/tara-sprite.png')}
             alt="Tara, Karakter Penjelajah LOGATARA"
             width={542}
             height={883}

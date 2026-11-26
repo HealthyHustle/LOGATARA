@@ -3,6 +3,7 @@ import { Lock, Check, Play, Star, Trophy, Pause, PlayCircle } from 'lucide-react
 import type { AdventureLevel } from '../../types';
 import { TaraSprite } from '../character/TaraSprite';
 import { playSoundEffect } from '../../services/audio/speechService';
+import { assetUrl } from '../../utils/assets';
 
 // Coordinate viewBox 1000 x 620 aligned to Kampung Nusantara 3D Diorama landmarks
 export const MAP_WIDTH = 1000;
@@ -233,7 +234,7 @@ export function AdventureMapStage({
         <div className="relative min-w-[740px] w-full aspect-[1000/620] select-none">
           {/* Authentic Stitch Kampung Nusantara 3D Diorama */}
           <img
-            src="/assets/environments/kampung-nusantara.png"
+            src={assetUrl('/assets/environments/kampung-nusantara.png')}
             alt="Peta Petualangan 3D Kampung Nusantara"
             width={1376}
             height={768}
