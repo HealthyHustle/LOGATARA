@@ -3,6 +3,7 @@ import { Send, Sparkles, Trash2, Loader2, AlertCircle, Bot } from 'lucide-react'
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { assetUrl } from '../../utils/assets';
+import { ChatMessageContent } from '../../components/chatbot/ChatMessageContent';
 import type { ChatMessage } from '../../types';
 
 const STARTER_QUESTIONS = [
@@ -137,13 +138,13 @@ export function ChatbotPage() {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`p-4 rounded-3xl max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+                  className={`p-4 rounded-3xl max-w-[85%] text-sm leading-relaxed shadow-sm ${
                     msg.role === 'user'
-                      ? 'ml-auto bg-primary text-white rounded-tr-sm'
+                      ? 'ml-auto bg-primary text-white rounded-tr-sm whitespace-pre-wrap'
                       : 'bg-surface-ivory border border-on-surface-bark/10 text-on-surface rounded-tl-sm'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'user' ? msg.content : <ChatMessageContent content={msg.content} />}
                 </div>
               ))}
 

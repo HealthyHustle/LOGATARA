@@ -16,6 +16,66 @@ import { buildSmartLocalChatReply } from '../../../backend/services/localChatEng
 import { assetUrl } from '../../utils/assets';
 
 const STORAGE_KEY = 'logatara_static_store_v1';
+const N8N_AI_WEBHOOK_URL = (
+  import.meta.env.VITE_N8N_AI_WEBHOOK_URL ?? 'https://dpwppijabar.app.n8n.cloud/webhook/logatara-ai'
+).trim();
+
+function extractN8nReply(data: any): string {
+  if (typeof data === 'string') return data.trim();
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = extractN8nReply(item);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (data && typeof data === 'object') {
+    const direct = data.reply || data.output || data.response || data.text || data.message || data.answer;
+    if (typeof direct === 'string' && direct.trim()) return direct.trim();
+    if (data.data) return extractN8nReply(data.data);
+  }
+  return '';
+}
+
+async function callN8nWebhookFromBrowser(payload: {
+  message: string;
+  sessionId: string;
+  userName: string;
+  currentLanguage: string;
+  currentProvince: string;
+  currentLevel: number;
+}): Promise<string> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 28000);
+  try {
+    const res = await fetch(N8N_AI_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: payload.message,
+        chatInput: payload.message,
+        sessionId: payload.sessionId,
+        userName: payload.userName,
+        currentLanguage: payload.currentLanguage,
+        currentProvince: payload.currentProvince,
+        currentLevel: payload.currentLevel,
+      }),
+      signal: controller.signal,
+    });
+    const raw = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let reply = '';
+    try {
+      reply = extractN8nReply(JSON.parse(raw));
+    } catch {
+      reply = raw.trim();
+    }
+    if (!reply) throw new Error('Respons kosong dari n8n');
+    return reply;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
 
 const ALL_PACKS: Record<string, any> = {
   ...VERIFIED_LANGUAGE_PACKS,
@@ -1133,15 +1193,29 @@ export async function handleStaticApiRequest<T = any>(
   }
 
   // === LOGATARA AI CHATBOT ===
+  if (pathname === '/chat/status' && method === 'GET') {
+    getAuthUser(store);
+    return (
+      N8N_AI_WEBHOOK_URL
+        ? { configured: true, provider: 'n8n', model: 'n8n-logatara-ai-agent', label: 'LOGATARA AI Agent (n8n)' }
+        : { configured: false, provider: 'local_knowledge_fallback', label: 'Mode Pengetahuan Lokal Terverifikasi' }
+    ) as T;
+  }
+
   if (pathname === '/chat/history' && method === 'GET') {
     const user = getAuthUser(store);
     return {
       conversation: { id: user.id, title: 'LOGATARA AI' },
       messages: store.chatMessages.filter((m) => m.user_id === user.id),
-      providerStatus: {
-        configured: false,
-        label: 'Mode Pengetahuan Lokal Terverifikasi (GitHub Pages Static Mode)',
-      },
+      providerStatus: N8N_AI_WEBHOOK_URL
+        ? {
+            configured: true,
+            label: 'LOGATARA AI Agent (n8n)',
+          }
+        : {
+            configured: false,
+            label: 'Mode Pengetahuan Lokal Terverifikasi (GitHub Pages Static Mode)',
+          },
     } as T;
   }
 
@@ -1174,17 +1248,52 @@ export async function handleStaticApiRequest<T = any>(
     );
     const currentModule = currentLvObj ? cat.modules.get(currentLvObj.id) || null : null;
 
-    const reply = buildSmartLocalChatReply({
-      user,
-      currentLanguage,
-      languages: cat.languages,
-      provinces: cat.provinces,
-      vocabulary: cat.vocabulary,
-      currentModule,
-      dailyPhrases: cat.dailyPhrases,
-      userMessage: content,
-      modeFooter: '\n\n*(Mode Pengetahuan Lokal Terverifikasi: pustaka 38 provinsi & 78 bahasa daerah LOGATARA)*',
-    });
+    let reply = '';
+    let providerMode = 'local_knowledge_fallback';
+    let providerLabel = 'Mode Pengetahuan Lokal Terverifikasi (GitHub Pages)';
+    let fallbackWarning: string | null = null;
+
+    if (N8N_AI_WEBHOOK_URL) {
+      try {
+        reply = await callN8nWebhookFromBrowser({
+          message: content,
+          sessionId: `logatara-gh-${user.id}`,
+          userName: user.full_name || 'Explorer',
+          currentLanguage: currentLanguage?.language_name || 'Basa Sunda',
+          currentProvince: currentLanguage?.province_name || 'Jawa Barat',
+          currentLevel: user.current_level_number || 1,
+        });
+        providerMode = 'n8n';
+        providerLabel = 'LOGATARA AI Agent (n8n)';
+      } catch (err: any) {
+        fallbackWarning = err?.message || 'Koneksi ke webhook n8n gagal';
+        const localReply = buildSmartLocalChatReply({
+          user,
+          currentLanguage,
+          languages: cat.languages,
+          provinces: cat.provinces,
+          vocabulary: cat.vocabulary,
+          currentModule,
+          dailyPhrases: cat.dailyPhrases,
+          userMessage: content,
+          modeFooter: '',
+        });
+        reply = `${localReply}\n\n*(Info: Koneksi langsung browser ke n8n AI Agent sementara terblokir CORS/jaringan. Pastikan opsi Allowed Origins (CORS) di node Webhook n8n diisi \`https://healthyhustle.github.io\` atau \`*\`.)*`;
+        providerLabel = 'Fallback Pengetahuan Lokal (Cek CORS Webhook n8n)';
+      }
+    } else {
+      reply = buildSmartLocalChatReply({
+        user,
+        currentLanguage,
+        languages: cat.languages,
+        provinces: cat.provinces,
+        vocabulary: cat.vocabulary,
+        currentModule,
+        dailyPhrases: cat.dailyPhrases,
+        userMessage: content,
+        modeFooter: '\n\n*(Mode Pengetahuan Lokal Terverifikasi: pustaka 38 provinsi & 78 bahasa daerah LOGATARA)*',
+      });
+    }
 
     const botMsg = {
       id: store.nextId++,
@@ -1192,7 +1301,7 @@ export async function handleStaticApiRequest<T = any>(
       user_id: user.id,
       role: 'assistant',
       content: reply,
-      provider_mode: 'local_knowledge_fallback',
+      provider_mode: providerMode,
       created_at: new Date().toISOString(),
     };
     store.chatMessages.push(botMsg);
@@ -1200,8 +1309,9 @@ export async function handleStaticApiRequest<T = any>(
     return {
       userMessage: userMsg,
       assistantMessage: botMsg,
-      providerMode: 'local_knowledge_fallback',
-      providerLabel: 'Mode Pengetahuan Lokal Terverifikasi (GitHub Pages)',
+      providerMode,
+      providerLabel,
+      fallbackWarning,
     } as T;
   }
 

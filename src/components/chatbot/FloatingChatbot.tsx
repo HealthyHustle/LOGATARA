@@ -4,6 +4,7 @@ import { Send, Minus, X, Sparkles, Trash2, AlertCircle, Loader2 } from 'lucide-r
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { assetUrl } from '../../utils/assets';
+import { ChatMessageContent } from './ChatMessageContent';
 import type { ChatMessage } from '../../types';
 
 const QUICK_PROMPTS = [
@@ -220,13 +221,13 @@ export function FloatingChatbot() {
                       {messages.map((msg) => (
                         <div
                           key={msg.id}
-                          className={`p-3 rounded-2xl max-w-[88%] text-sm leading-relaxed whitespace-pre-wrap ${
+                          className={`p-3 rounded-2xl max-w-[88%] text-sm leading-relaxed ${
                             msg.role === 'user'
-                              ? 'ml-auto bg-primary text-on-primary rounded-tr-sm shadow-sm'
+                              ? 'ml-auto bg-primary text-on-primary rounded-tr-sm shadow-sm whitespace-pre-wrap'
                               : 'bg-surface-ivory border border-on-surface-bark/10 text-on-surface rounded-tl-sm shadow-sm'
                           }`}
                         >
-                          {msg.content}
+                          {msg.role === 'user' ? msg.content : <ChatMessageContent content={msg.content} />}
                         </div>
                       ))}
 

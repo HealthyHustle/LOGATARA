@@ -1,7 +1,25 @@
 import { queryAll, queryOne } from '../database/db.js';
 import { buildSmartLocalChatReply } from './localChatEngine.js';
 
+const DEFAULT_N8N_WEBHOOK_URL = 'https://dpwppijabar.app.n8n.cloud/webhook/logatara-ai';
+
+function getN8nWebhookUrl() {
+  if (process.env.N8N_AI_WEBHOOK_URL !== undefined) {
+    return process.env.N8N_AI_WEBHOOK_URL.trim();
+  }
+  return DEFAULT_N8N_WEBHOOK_URL;
+}
+
 export function getAiProviderStatus() {
+  const n8nUrl = getN8nWebhookUrl();
+  if (n8nUrl) {
+    return {
+      configured: true,
+      provider: 'n8n',
+      model: 'n8n-logatara-ai-agent',
+      label: 'LOGATARA AI Agent (n8n)',
+    };
+  }
   if (process.env.GEMINI_API_KEY?.trim()) {
     return {
       configured: true,
@@ -24,6 +42,60 @@ export function getAiProviderStatus() {
     model: 'logatara-verified-knowledge-base',
     label: 'Mode Pengetahuan Lokal (API AI belum dikonfigurasi)',
   };
+}
+
+function extractN8nReplyText(data) {
+  if (typeof data === 'string') return data.trim();
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = extractN8nReplyText(item);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (data && typeof data === 'object') {
+    const direct = data.reply || data.output || data.response || data.text || data.message || data.answer;
+    if (typeof direct === 'string' && direct.trim()) return direct.trim();
+    if (data.data) return extractN8nReplyText(data.data);
+  }
+  return '';
+}
+
+async function callN8nAgent({ user, currentLanguage, historyMessages, userMessage }) {
+  const webhookUrl = getN8nWebhookUrl();
+  const sessionId = `logatara-user-${user.id}`;
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: userMessage,
+      chatInput: userMessage,
+      sessionId,
+      userName: user.full_name,
+      currentLanguage: currentLanguage?.language_name || 'Basa Sunda',
+      currentProvince: currentLanguage?.province_name || 'Jawa Barat',
+      currentLevel: user.current_level_number || 1,
+      history: (historyMessages || []).slice(-6),
+    }),
+    signal: AbortSignal.timeout(28000),
+  });
+
+  const rawText = await response.text();
+  if (!response.ok) {
+    throw new Error(`n8n AI Agent HTTP ${response.status}: ${rawText.slice(0, 160)}`);
+  }
+
+  let reply = '';
+  try {
+    const parsed = JSON.parse(rawText);
+    reply = extractN8nReplyText(parsed);
+  } catch {
+    reply = rawText.trim();
+  }
+
+  if (!reply) throw new Error('Respons n8n AI Agent kosong.');
+  return reply;
 }
 
 async function buildUserLearningContext(user, currentLanguage) {
@@ -212,6 +284,22 @@ async function buildVerifiedLocalFallbackReply(user, currentLanguage, userMessag
 
 export async function generateChatResponse({ user, currentLanguage, historyMessages, userMessage }) {
   const status = getAiProviderStatus();
+
+  if (status.provider === 'n8n') {
+    try {
+      const reply = await callN8nAgent({ user, currentLanguage, historyMessages, userMessage });
+      return { reply, providerMode: 'n8n', providerLabel: status.label, fallbackWarning: null };
+    } catch (err) {
+      const fallbackReply = await buildVerifiedLocalFallbackReply(user, currentLanguage, userMessage);
+      return {
+        reply: `${fallbackReply}\n\n*(Info teknis: Koneksi ke LOGATARA AI Agent n8n gagal sementara: ${err.message})*`,
+        providerMode: 'local_knowledge_fallback',
+        providerLabel: 'Fallback Pengetahuan Lokal (n8n AI Agent sedang tidak terjangkau)',
+        fallbackWarning: err.message,
+      };
+    }
+  }
+
   const context = await buildUserLearningContext(user, currentLanguage);
   const systemPrompt = buildSystemPrompt(user, currentLanguage, context);
 
@@ -260,7 +348,7 @@ export async function generateChatResponse({ user, currentLanguage, historyMessa
  */
 export async function translateWithAi({ text, language, direction, sampleVocab = [] }) {
   const status = getAiProviderStatus();
-  if (!status.configured) return null;
+  if (status.provider !== 'gemini' && status.provider !== 'openai') return null;
 
   const vocabHints = sampleVocab
     .slice(0, 12)
