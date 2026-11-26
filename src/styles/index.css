@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #fdf8ee;
+    color: #2a1708;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    overscroll-behavior-y: none;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Quicksand', 'Nunito', sans-serif;
+    letter-spacing: 0.01em;
+  }
+}
+
+/* ========================================================
+   Native <dialog> Top-Layer & Scroll-Containment Rules
+   (Per modern-web-guidance: dialog)
+   ======================================================== */
+dialog.storybook-dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: min(92vw, 32rem);
+  width: 100%;
+  overflow: visible;
+}
+
+dialog.storybook-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  background: rgba(42, 23, 8, 0.52);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ========================================================
+   Deferred Form Validation (:user-invalid / :user-valid)
+   (Per modern-web-guidance: validate-input-after-interaction)
+   ======================================================== */
+.logatara-input {
+  background-color: #f7efe1;
+  color: #2a1708;
+  border: 2px solid rgba(92, 67, 49, 0.16);
+  border-radius: 1.15rem;
+  box-shadow: inset 0 2px 4px rgba(92, 67, 49, 0.05);
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.logatara-input:focus {
+  outline: none;
+  border-color: #4c6444;
+  background-color: #fffdf8;
+  box-shadow: 0 0 0 3px rgba(76, 100, 68, 0.18);
+}
+
+.logatara-input:is(:user-invalid, .user-invalid-fallback) {
+  border-color: #ba1a1a;
+  background-color: #fff3f2;
+}
+
+.logatara-input:is(:user-valid, .user-valid-fallback) {
+  border-color: #354c2e;
+}
+
+.field-error-msg {
+  display: none;
+  color: #ba1a1a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+.field-group:has(.logatara-input:is(:user-invalid, .user-invalid-fallback)) .field-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.field-group:has(.logatara-input:is(:user-invalid, .user-invalid-fallback)) .field-rules-list {
+  color: #ba1a1a;
+  font-weight: 600;
+}
+
+/* Keep layout height reserved so submit button does not jump on blur */
+.field-group:has(.logatara-input:is(:user-valid, .user-valid-fallback)) .field-rules-list {
+  visibility: hidden;
+}
+
+/* ========================================================
+   Tactile Storybook Buttons & Cards
+   ======================================================== */
+.btn-adventure {
+  background-color: #c85a32;
+  color: #ffffff;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  border-radius: 9999px;
+  border-bottom: 4px solid #9e3e1c;
+  box-shadow: 0 8px 18px rgba(162, 62, 24, 0.25);
+  transition: transform 120ms ease, filter 120ms ease, border-bottom-width 120ms ease;
+}
+
+.btn-adventure:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.btn-adventure:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.btn-foliage {
+  background-color: #4c6444;
+  color: #ffffff;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  border-radius: 9999px;
+  border-bottom: 4px solid #2d4229;
+  box-shadow: 0 8px 18px rgba(53, 76, 46, 0.22);
+  transition: transform 120ms ease, filter 120ms ease, border-bottom-width 120ms ease;
+}
+
+.btn-foliage:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.btn-foliage:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.btn-parchment {
+  background-color: #fffdf8;
+  color: #5c4331;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(92, 67, 49, 0.16);
+  border-bottom: 3px solid rgba(92, 67, 49, 0.22);
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+.btn-parchment:hover:not(:disabled) {
+  background-color: #fff1e9;
+}
+
+.btn-parchment:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.storybook-card {
+  background-color: #fffdf8;
+  border: 1.5px solid rgba(92, 67, 49, 0.1);
+  border-radius: 1.75rem;
+  box-shadow: 0 2px 4px rgba(92, 67, 49, 0.05), 0 10px 24px rgba(92, 67, 49, 0.07);
+}
+
+/* Subtle Batik Kawung SVG Watermark */
+.batik-watermark {
+  background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%235C4331' stroke-opacity='0.05' stroke-width='1.2'%3E%3Cellipse cx='24' cy='12' rx='6' ry='10'/%3E%3Cellipse cx='24' cy='36' rx='6' ry='10'/%3E%3Cellipse cx='12' cy='24' rx='10' ry='6'/%3E%3Cellipse cx='36' cy='24' rx='10' ry='6'/%3E%3Ccircle cx='24' cy='24' r='2.5' fill='%235C4331' fill-opacity='0.05'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ========================================================
+   Compositor-Safe Motion & Reduced-Motion Support
+   (Per modern-web-guidance: motion)
+   ======================================================== */
+@keyframes tara-idle-bob {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes tara-walk-step {
+  0%, 100% {
+    transform: translateY(0px) rotate(-3deg) scaleY(1);
+  }
+  25% {
+    transform: translateY(-10px) rotate(2deg) scaleY(1.03);
+  }
+  50% {
+    transform: translateY(0px) rotate(3deg) scaleY(0.97);
+  }
+  75% {
+    transform: translateY(-10px) rotate(-2deg) scaleY(1.03);
+  }
+}
+
+@keyframes tara-celebrate-jump {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  40% {
+    transform: translateY(-18px) scale(1.07);
+  }
+  70% {
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.38);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.38);
+    opacity: 0;
+  }
+}
+
+.tara-idle {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: tara-idle-bob 2.8s ease-in-out infinite;
+  }
+}
+
+.tara-walking {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: tara-walk-step 0.44s ease-in-out infinite;
+  }
+}
+
+.tara-celebrating {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: tara-celebrate-jump 0.7s ease-in-out 3;
+  }
+}
+
+.node-pulse-ring {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+}
+
+.motion-paused,
+.motion-paused * {
+  animation-play-state: paused !important;
+}
+
+/* Visually hidden live region utility */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}

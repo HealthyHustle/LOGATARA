@@ -1,0 +1,39 @@
+{
+  "name": "logatara",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "LOGATARA — Indonesian Regional Language Adventure Platform",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c green,cyan \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "node --watch backend/server.js",
+    "dev:client": "vite",
+    "build": "tsc -b && vite build",
+    "start": "node backend/server.js",
+    "db:seed": "node backend/database/seed.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "framer-motion": "^12.4.7",
+    "lucide-react": "^0.475.0",
+    "pg": "^8.13.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.1"
+  }
+}
