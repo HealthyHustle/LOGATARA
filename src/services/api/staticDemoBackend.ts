@@ -62,7 +62,7 @@ function summarizeBrowserAgent(): string {
 }
 
 function sendStaticUserEventToN8n(params: {
-  event: 'REGISTER' | 'LOGIN' | 'LOGIN_FAILED' | 'ONBOARDING';
+  event: 'REGISTER' | 'LOGIN';
   userId?: number;
   fullName?: string;
   email: string;
@@ -744,13 +744,6 @@ export async function handleStaticApiRequest<T = any>(
     const hash = await sha256Hex(`${email}:${password}`);
     const user = store.users.find((u) => u.email === email && u.password_hash === hash);
     if (!user) {
-      sendStaticUserEventToN8n({
-        event: 'LOGIN_FAILED',
-        userId: 0,
-        fullName: '-',
-        email,
-        status: 'GAGAL',
-      });
       throw makeError('Email atau kata sandi salah. Periksa kembali dan coba lagi.', 401);
     }
     store.currentUserId = user.id;
@@ -834,24 +827,6 @@ export async function handleStaticApiRequest<T = any>(
     user.onboarding_completed = true;
     ensureProgressForLang(store, user.id, targetId);
     saveStore(store);
-
-    const knownNames = (user.known_language_ids || [])
-      .map((id: number) => cat.languages.find((l: any) => l.id === id)?.language_name)
-      .filter(Boolean)
-      .join(', ');
-    const targetName = cat.languages.find((l: any) => l.id === targetId)?.language_name || '-';
-
-    sendStaticUserEventToN8n({
-      event: 'ONBOARDING',
-      userId: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      status: 'BERHASIL',
-      knownLanguages: knownNames || '-',
-      targetLanguage: targetName,
-      currentLevel: user.current_level_number || 1,
-      totalXp: user.total_xp || 0,
-    });
 
     return { message: 'Preferensi bahasa berhasil disimpan!', currentLanguageId: targetId } as T;
   }

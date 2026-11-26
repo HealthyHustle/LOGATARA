@@ -104,15 +104,6 @@ router.post('/login', async (req, res, next) => {
 
     const userRow = await queryOne('SELECT id, email, password_hash FROM users WHERE LOWER(email) = ?', [email]);
     if (!userRow || !verifyPassword(password, userRow.password_hash)) {
-      logUserEventLive({
-        event: 'LOGIN_FAILED',
-        userId: userRow?.id || 0,
-        fullName: '-',
-        email,
-        status: 'GAGAL',
-        source: req.get('origin') || 'Localhost',
-        userAgent: req.get('user-agent') || '',
-      });
       return res.status(401).json({ error: 'Email atau kata sandi salah. Periksa kembali dan coba lagi.' });
     }
 
