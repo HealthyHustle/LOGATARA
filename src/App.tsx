@@ -20,11 +20,11 @@ function FullScreenLoader() {
   return (
     <div className="min-h-screen bg-surface-parchment flex flex-col items-center justify-center gap-4 p-6">
       <img
-        src={assetUrl('/assets/icons/logatara-logo.svg')}
+        src={assetUrl('/assets/icons/LOGO.png')}
         alt="LOGATARA"
         width={180}
-        height={45}
-        className="h-11 w-auto"
+        height={120}
+        className="h-24 sm:h-28 w-auto object-contain drop-shadow-sm"
       />
       <p className="font-display font-bold text-primary animate-pulse">
         Menyiapkan Kampung Nusantara...

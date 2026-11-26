@@ -637,7 +637,7 @@ export function ProfilePage() {
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-fixed text-primary text-xs font-bold"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      {lv.language_name} — Lv.{lv.level_number}: {lv.title}
+                      {lv.language_name} (Lv.{lv.level_number}: {lv.title})
                     </span>
                   ))}
                 </div>
@@ -702,7 +702,7 @@ export function ProfilePage() {
                     <p className="font-display font-bold text-base text-on-surface">
                       {v.regional_word}{' '}
                       <span className="text-xs font-normal text-on-surface-variant">
-                        — {v.indonesian_meaning}
+                        ({v.indonesian_meaning})
                       </span>
                     </p>
                     {v.pronunciation && (

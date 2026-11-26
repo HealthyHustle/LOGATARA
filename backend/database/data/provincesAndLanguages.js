@@ -376,7 +376,7 @@ export const REGIONAL_LANGUAGES = [
     language_description: 'Bahasa rumpun Chamic yang dituturkan di wilayah pesisir dan lembah Aceh.',
     pronunciation_information: 'Memiliki sistem vokal kaya termasuk vokal nasal dan diftong khas.',
     verification_status: 'needs_verification',
-    source_metadata: 'Struktur katalog 38 provinsi — kosakata penuh memerlukan verifikasi Balai Bahasa Aceh',
+    source_metadata: 'Struktur katalog 38 provinsi (kosakata penuh memerlukan verifikasi Balai Bahasa Aceh)',
     has_full_curriculum: 0,
   },
   {

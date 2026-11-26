@@ -166,7 +166,7 @@ export function buildSmartLocalChatReply({
           vocabulary.find(matchWord);
         if (wordHit) {
           const wordLang = languages.find((l) => l.id === wordHit.language_id) || targetLang;
-          return `**Panduan Pelafalan "${wordHit.regional_word}"** (${wordHit.language_name} — ${wordHit.register_level})\n\n• **Cara Baca:** \`/${wordHit.pronunciation}/\`\n• **Arti:** *${wordHit.indonesian_meaning}*\n• **Contoh Kalimat:** "${wordHit.example_sentence}" (*${wordHit.example_translation}*)\n\n${
+          return `**Panduan Pelafalan "${wordHit.regional_word}"** (${wordHit.language_name}, ${wordHit.register_level})\n\n• **Cara Baca:** \`/${wordHit.pronunciation}/\`\n• **Arti:** *${wordHit.indonesian_meaning}*\n• **Contoh Kalimat:** "${wordHit.example_sentence}" (*${wordHit.example_translation}*)\n\n${
             wordLang?.pronunciation_information ? `**Catatan Fonetik ${wordLang.language_name}:** ${wordLang.pronunciation_information}` : ''
           }${modeFooter}`;
         }
@@ -210,7 +210,7 @@ export function buildSmartLocalChatReply({
       dailyPhrases[0];
     if (dpMatch && dpMatch.example_dialogue?.length) {
       const lines = dpMatch.example_dialogue.map((d) => `• **${d.speaker}:** "${d.text}"`).join('\n');
-      return `**Contoh Percakapan ${dpMatch.language_name}** (${dpMatch.province_name})\n\nUngkapan utama: **"${dpMatch.regional_phrase}"** (*${dpMatch.indonesian_meaning}*) — \`${dpMatch.pronunciation}\`\n\n${lines}\n\n**Catatan Budaya:** ${dpMatch.cultural_context}${modeFooter}`;
+      return `**Contoh Percakapan ${dpMatch.language_name}** (${dpMatch.province_name})\n\nUngkapan utama: **"${dpMatch.regional_phrase}"** (*${dpMatch.indonesian_meaning}*, dibaca \`${dpMatch.pronunciation}\`)\n\n${lines}\n\n**Catatan Budaya:** ${dpMatch.cultural_context}${modeFooter}`;
     }
   }
 
@@ -299,7 +299,7 @@ export function buildSmartLocalChatReply({
 
       const lines = picked.map(
         (v) =>
-          `• **${v.regional_word}** (${v.language_name} — ${v.register_level})\n  Arti: *${v.indonesian_meaning}* | Pelafalan: \`/${v.pronunciation}/\`\n  Contoh: "${v.example_sentence}" (*${v.example_translation}*)`
+          `• **${v.regional_word}** (${v.language_name}, ${v.register_level})\n  Arti: *${v.indonesian_meaning}* | Pelafalan: \`/${v.pronunciation}/\`\n  Contoh: "${v.example_sentence}" (*${v.example_translation}*)`
       );
       return `${header}\n\n${lines.join('\n\n')}${modeFooter}`;
     }

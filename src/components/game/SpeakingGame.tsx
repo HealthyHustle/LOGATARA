@@ -292,7 +292,7 @@ export function SpeakingGame({
                       <CheckCircle2 className="w-4 h-4" />
                       {rec.evaluationMode === 'speech_recognition'
                         ? 'Terekam & Terdeteksi (Speech Recognition)'
-                        : 'Terekam — Evaluasi Pelafalan Mandiri'}
+                        : 'Terekam (Evaluasi Pelafalan Mandiri)'}
                     </span>
                     <button
                       type="button"

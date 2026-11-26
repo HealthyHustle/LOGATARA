@@ -53,13 +53,13 @@ export function RegisterPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-canopy via-primary-canopy/45 to-transparent" />
 
           <div className="relative z-10 p-6 flex items-center justify-between">
-            <div className="bg-surface-ivory/95 backdrop-blur-md px-3.5 py-2 rounded-full shadow-md">
+            <div className="bg-surface-ivory/95 backdrop-blur-md px-3 py-0.5 rounded-2xl shadow-md">
               <img
-                src={assetUrl('/assets/icons/logatara-logo.svg')}
+                src={assetUrl('/assets/icons/LOGO.png')}
                 alt="LOGATARA"
-                width={140}
-                height={35}
-                className="h-8 w-auto"
+                width={144}
+                height={96}
+                className="h-16 sm:h-[72px] w-auto object-contain"
               />
             </div>
             <span className="px-3 py-1 rounded-full bg-tertiary-gold text-on-tertiary-fixed font-display font-bold text-xs shadow-sm">

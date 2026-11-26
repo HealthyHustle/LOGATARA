@@ -47,7 +47,7 @@ export function LoginPage() {
         <section className="lg:col-span-6 relative rounded-[2rem] overflow-hidden shadow-storybook-lg bg-primary text-on-primary flex flex-col justify-between min-h-[280px] lg:min-h-[560px]">
           <img
             src={assetUrl('/assets/environments/kampung-nusantara.png')}
-            alt="Kampung Nusantara — Dunia Petualangan LOGATARA"
+            alt="Kampung Nusantara, Dunia Petualangan LOGATARA"
             width={1376}
             height={768}
             fetchPriority="high"
@@ -56,13 +56,13 @@ export function LoginPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-canopy via-primary-canopy/40 to-transparent" />
 
           <div className="relative z-10 p-6">
-            <div className="inline-flex bg-surface-ivory/95 backdrop-blur-md px-3.5 py-2 rounded-full shadow-md">
+            <div className="inline-flex bg-surface-ivory/95 backdrop-blur-md px-3 py-0.5 rounded-2xl shadow-md">
               <img
-                src={assetUrl('/assets/icons/logatara-logo.svg')}
+                src={assetUrl('/assets/icons/LOGO.png')}
                 alt="LOGATARA"
-                width={140}
-                height={35}
-                className="h-8 w-auto"
+                width={144}
+                height={96}
+                className="h-16 sm:h-[72px] w-auto object-contain"
               />
             </div>
           </div>

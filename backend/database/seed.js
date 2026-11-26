@@ -79,6 +79,16 @@ export async function syncVerifiedDictionaries({ silent = false } = {}) {
      SET pronunciation_information = 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "rampes" & "punten"), "é" taling (seperti "sate" pada "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").'
      WHERE language_name = 'Basa Sunda' AND pronunciation_information LIKE '%"enak"%'`
   );
+  await execute(
+    `UPDATE learning_modules
+     SET pronunciation_notes = REPLACE(pronunciation_notes, 'makan - untuk', 'makan untuk')
+     WHERE pronunciation_notes LIKE '%makan - untuk%'`
+  );
+  await execute(
+    `UPDATE game_activities
+     SET story_json = REPLACE(story_json, ' — ', ', yang berarti ')
+     WHERE story_json LIKE '% — %'`
+  );
 
   if (!silent && (addedEntries > 0 || verifiedLangs > 0)) {
     console.log(

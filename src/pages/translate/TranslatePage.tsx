@@ -259,7 +259,7 @@ export function TranslatePage() {
             >
               {filteredLanguageOptions.map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.language_name} — {l.province_name} ({l.vocab_count || 0} kata ✓)
+                  {l.language_name}, {l.province_name} ({l.vocab_count || 0} kata ✓)
                 </option>
               ))}
             </select>
@@ -505,7 +505,7 @@ export function TranslatePage() {
               <option value="all">Semua 78 Bahasa Terverifikasi</option>
               {languages.map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.language_name} ({l.province_name}) — {l.vocab_count || 0} kata
+                  {l.language_name}, {l.province_name} ({l.vocab_count || 0} kata)
                 </option>
               ))}
             </select>

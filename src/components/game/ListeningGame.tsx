@@ -29,7 +29,7 @@ export function ListeningGame({
     const masked = words
       .map((w) => (w.length <= 2 ? `${w[0]}_` : `${w[0]}${'_'.repeat(Math.min(5, w.length - 1))}`))
       .join('  ');
-    return `${masked} (${words.length} kata — coba tombol "Putar Pelan" untuk menyimak suku katanya)`;
+    return `${masked} (${words.length} kata, coba tombol "Putar Pelan" untuk menyimak suku katanya)`;
   };
 
   const playAudio = (qId: number, text: string, slow = false) => {

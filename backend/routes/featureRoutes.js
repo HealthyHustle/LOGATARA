@@ -256,7 +256,7 @@ router.post('/translate', requireAuth, async (req, res, next) => {
         registerLevel: 'Berbantuan AI',
         exampleSentence: aiTrans.exampleSentence || '',
         exampleTranslation: aiTrans.exampleTranslation || '',
-        sourceMetadata: `Terjemahan Berbantuan ${aiTrans.providerLabel}${aiTrans.notes ? ` — ${aiTrans.notes}` : ''}`,
+        sourceMetadata: `Terjemahan Berbantuan ${aiTrans.providerLabel}${aiTrans.notes ? ` (${aiTrans.notes})` : ''}`,
         matches: [],
         wordBreakdown: [],
         message: `Diterjemahkan menggunakan ${aiTrans.providerLabel} berbasis konteks kamus ${language.language_name}.`,
@@ -514,11 +514,11 @@ router.post('/chat/message', requireAuth, async (req, res, next) => {
 
     const currentLanguage = req.user.current_language_id
       ? await queryOne(
-          `SELECT rl.*, p.province_name
+        `SELECT rl.*, p.province_name
            FROM regional_languages rl JOIN provinces p ON p.id = rl.province_id
            WHERE rl.id = ?`,
-          [req.user.current_language_id]
-        )
+        [req.user.current_language_id]
+      )
       : null;
 
     const aiResult = await generateChatResponse({

@@ -53,11 +53,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/dashboard" className="flex items-center gap-2 shrink-0 group">
               <img
-                src={assetUrl('/assets/icons/logatara-logo.svg')}
+                src={assetUrl('/assets/icons/LOGO.png')}
                 alt="LOGATARA"
-                width={156}
-                height={39}
-                className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                width={108}
+                height={72}
+                className="h-14 sm:h-[60px] w-auto object-contain transition-transform group-hover:scale-[1.03]"
               />
             </Link>
 

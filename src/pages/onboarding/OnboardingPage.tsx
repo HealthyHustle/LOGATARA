@@ -98,16 +98,25 @@ export function OnboardingPage() {
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Welcome Banner */}
         <header className="storybook-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 bg-gradient-to-br from-surface-ivory via-surface-low to-surface-container/60">
-          <div className="space-y-2 text-center md:text-left">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-primary font-bold text-xs uppercase tracking-wide">
-              <Sparkles className="w-3.5 h-3.5" />
-              Langkah 2 dari 2 • Profil Bahasa Daerah
-            </span>
+          <div className="space-y-2.5 text-center md:text-left">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+              <img
+                src={assetUrl('/assets/icons/LOGO.png')}
+                alt="LOGATARA"
+                width={96}
+                height={64}
+                className="h-12 sm:h-14 w-auto object-contain"
+              />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-primary font-bold text-xs uppercase tracking-wide">
+                <Sparkles className="w-3.5 h-3.5" />
+                Langkah 2 dari 2 • Profil Bahasa Daerah
+              </span>
+            </div>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-primary">
               Halo, {user?.full_name || 'Explorer'}! Mari Atur Perjalanan Bahasamu
             </h1>
             <p className="text-on-surface-variant text-sm sm:text-base max-w-2xl">
-              Indonesia memiliki 38 provinsi dan ratusan bahasa daerah — satu provinsi bisa memiliki banyak bahasa! Pilih bahasa yang sudah kamu kenal dan bahasa yang ingin kamu pelajari bersama Tara.
+              Indonesia memiliki 38 provinsi dan ratusan bahasa daerah, bahkan satu provinsi bisa memiliki banyak bahasa! Pilih bahasa yang sudah kamu kenal dan bahasa yang ingin kamu pelajari bersama Tara.
             </p>
           </div>
           <img

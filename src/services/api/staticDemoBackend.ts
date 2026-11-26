@@ -1178,7 +1178,7 @@ export async function handleStaticApiRequest<T = any>(
       currentModule,
       dailyPhrases: cat.dailyPhrases,
       userMessage: content,
-      modeFooter: '\n\n*(Mode Pengetahuan Lokal Terverifikasi — pustaka 38 provinsi & 78 bahasa daerah LOGATARA)*',
+      modeFooter: '\n\n*(Mode Pengetahuan Lokal Terverifikasi: pustaka 38 provinsi & 78 bahasa daerah LOGATARA)*',
     });
 
     const botMsg = {

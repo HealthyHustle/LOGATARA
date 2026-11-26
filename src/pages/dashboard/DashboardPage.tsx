@@ -171,7 +171,7 @@ export function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-secondary-terracotta" />
             <h2 className="font-display font-bold text-base sm:text-lg text-primary">
-              Dunia Kampung Nusantara — Jelajahi 7 Lokasi Budaya
+              Dunia Kampung Nusantara: Jelajahi 7 Lokasi Budaya
             </h2>
           </div>
           <div className="flex items-center gap-2">

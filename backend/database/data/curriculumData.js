@@ -133,7 +133,7 @@ export const VERIFIED_LANGUAGE_PACKS = {
       },
       3: {
         culturalContext: 'Masyarakat Sunda dikenal hangat dalam percakapan harian. Kata "Mangga" memiliki arti serbaguna: silakan, mari, atau mengiyakan dengan penuh hormat.',
-        pronunciationNotes: 'Perhatikan "tuang" (makan - untuk orang lain, lemes) dan "neda" (makan - untuk diri sendiri, lemes). Dalam keseharian loma sering dipakai "dahar".',
+        pronunciationNotes: 'Perhatikan "tuang" (makan untuk orang lain, lemes) dan "neda" (makan untuk diri sendiri, lemes). Dalam keseharian loma sering dipakai "dahar".',
         vocab: [
           { word: 'Mangga', meaning: 'Silakan / Mari', pron: 'mang-ga', ex: 'Mangga calik heula!', exTr: 'Silakan duduk dulu!', register: 'Lemes' },
           { word: 'Bade ka mana?', meaning: 'Mau pergi ke mana?', pron: 'ba-dé ka ma-na', ex: 'Kang, bade ka mana?', exTr: 'Kak, mau pergi ke mana?', register: 'Lemes' },
@@ -341,7 +341,7 @@ export const VERIFIED_LANGUAGE_PACKS = {
         storyTitle: 'Rukun Agawe Santosa di Sawah',
         storyParagraphs: [
           'Air banyu mengalir jernih menyusuri sawah terasering yang endah. Para petani melaksanakan gugur gunung memperbaiki saluran irigasi agar pari tumbuh subur.',
-          'Tara mencatat peribahasa Jawa favoritnya di buku saku: "Rukun agawe santosa" — kerukunan membuat masyarakat kuat dan tenteram.',
+          'Tara mencatat peribahasa Jawa favoritnya di buku saku: "Rukun agawe santosa", yang berarti kerukunan membuat masyarakat kuat dan tenteram.',
         ],
         readingQuestion: 'Apa arti istilah tradisi "Gugur gunung" dalam budaya Jawa?',
         readingOptions: ['Gotong royong / kerja bakti bersama', 'Mendaki gunung tinggi', 'Memetik bunga kamboja', 'Menari di pendopo'],

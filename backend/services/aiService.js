@@ -71,7 +71,7 @@ ${vocabBlock || '(Bahasa ini masih dalam tahap verifikasi kamus lengkap.)'}
 ATURAN KETAT:
 1. Jelaskan kosakata, tata bahasa/unggah-ungguh, cara pelafalan, contoh percakapan, budaya daerah, dan berikan petunjuk belajar tanpa mengarang terjemahan yang tidak kamu yakini kebenarannya.
 2. Jika suatu bahasa daerah belum memiliki data terverifikasi yang cukup, sampaikan secara jujur bahwa kosakata tersebut memerlukan verifikasi penutur asli atau Balai Bahasa setempat.
-3. Jawab ringkas, terstruktur, dan mudah dipahami pelajar Indonesia.`;
+3. Jawab ringkas, alami, terstruktur, dan mudah dipahami pelajar Indonesia. Hindari penggunaan tanda pisah panjang (em-dash) agar gaya bahasa terasa natural.`;
 }
 
 async function callGeminiProvider(systemPrompt, historyMessages, userMessage) {
@@ -206,7 +206,7 @@ async function buildVerifiedLocalFallbackReply(user, currentLanguage, userMessag
     dailyPhrases,
     userMessage,
     modeFooter:
-      '\n\n*(Mode Pengetahuan Lokal Terverifikasi — tambahkan `GEMINI_API_KEY` atau `OPENAI_API_KEY` di `.env` untuk percakapan AI generatif bebas.)*',
+      '\n\n*(Mode Pengetahuan Lokal Terverifikasi. Tambahkan `GEMINI_API_KEY` atau `OPENAI_API_KEY` di `.env` untuk percakapan AI generatif bebas.)*',
   });
 }
 
@@ -222,7 +222,7 @@ export async function generateChatResponse({ user, currentLanguage, historyMessa
     } catch (err) {
       const fallbackReply = await buildVerifiedLocalFallbackReply(user, currentLanguage, userMessage);
       return {
-        reply: `${fallbackReply}\n\n*(Info teknis: Koneksi ke Gemini AI gagal sementara — ${err.message})*`,
+        reply: `${fallbackReply}\n\n*(Info teknis: Koneksi ke Gemini AI gagal sementara: ${err.message})*`,
         providerMode: 'local_knowledge_fallback',
         providerLabel: 'Fallback Pengetahuan Lokal (API AI sedang bermasalah)',
         fallbackWarning: err.message,
@@ -237,7 +237,7 @@ export async function generateChatResponse({ user, currentLanguage, historyMessa
     } catch (err) {
       const fallbackReply = await buildVerifiedLocalFallbackReply(user, currentLanguage, userMessage);
       return {
-        reply: `${fallbackReply}\n\n*(Info teknis: Koneksi ke Provider AI gagal sementara — ${err.message})*`,
+        reply: `${fallbackReply}\n\n*(Info teknis: Koneksi ke Provider AI gagal sementara: ${err.message})*`,
         providerMode: 'local_knowledge_fallback',
         providerLabel: 'Fallback Pengetahuan Lokal (API AI sedang bermasalah)',
         fallbackWarning: err.message,
