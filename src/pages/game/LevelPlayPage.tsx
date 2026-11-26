@@ -351,9 +351,9 @@ export function LevelPlayPage() {
             <img
               src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Tara siap melangkah"
-              width={542}
-              height={883}
-              className="w-16 h-auto object-contain tara-idle shrink-0"
+              width={374}
+              height={888}
+              className="w-14 h-auto object-contain tara-idle shrink-0"
             />
             <div>
               <h3 className="font-display text-xl font-bold">

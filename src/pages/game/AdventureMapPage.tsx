@@ -458,9 +458,9 @@ export function AdventureMapPage() {
             <img
               src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Tara merayakan keberhasilanmu"
-              width={542}
-              height={883}
-              className="w-24 h-auto object-contain drop-shadow-lg tara-celebrating"
+              width={374}
+              height={888}
+              className="w-20 h-auto object-contain drop-shadow-lg tara-celebrating"
             />
           </div>
 

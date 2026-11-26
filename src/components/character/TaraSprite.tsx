@@ -78,8 +78,8 @@ export function TaraSprite({
           <img
             src={assetUrl('/assets/characters/tara-sprite.png')}
             alt="Tara, Karakter Penjelajah LOGATARA"
-            width={542}
-            height={883}
+            width={374}
+            height={888}
             draggable={false}
             className="w-full h-full object-contain drop-shadow-[0_6px_10px_rgba(42,23,8,0.35)] transition-transform duration-200"
             style={{

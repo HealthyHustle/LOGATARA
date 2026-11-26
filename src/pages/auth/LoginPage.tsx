@@ -83,9 +83,9 @@ export function LoginPage() {
             <img
               src={assetUrl('/assets/characters/tara-sprite.png')}
               alt="Karakter Tara LOGATARA"
-              width={542}
-              height={883}
-              className="hidden sm:block w-28 md:w-32 h-auto object-contain drop-shadow-xl tara-idle shrink-0"
+              width={374}
+              height={888}
+              className="hidden sm:block w-24 md:w-28 h-auto object-contain drop-shadow-xl tara-idle shrink-0"
             />
           </div>
         </section>
