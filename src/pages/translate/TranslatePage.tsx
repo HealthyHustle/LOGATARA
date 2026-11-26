@@ -352,7 +352,11 @@ export function TranslatePage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={() => speakPhrase(result.translation)}
+                      onClick={() =>
+                        speakPhrase(result.translation, {
+                          languageName: direction === 'id-to-regional' ? result.language?.language_name : undefined,
+                        })
+                      }
                       aria-label="Putar pelafalan hasil terjemahan"
                       className="p-2.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed hover:bg-tertiary-gold"
                     >
@@ -546,7 +550,7 @@ export function TranslatePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => speakPhrase(entry.regional_word)}
+                      onClick={() => speakPhrase(entry.regional_word, { languageName: entry.language_name })}
                       aria-label={`Putar suara ${entry.regional_word}`}
                       className="p-2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed hover:bg-tertiary-gold shrink-0"
                     >

@@ -5,6 +5,7 @@ import {
   Volume2,
   Play,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   Info,
   ArrowRight,
@@ -15,6 +16,8 @@ import {
   speakPhrase,
   playSoundEffect,
   isSpeechRecognitionSupported,
+  resolveSpeechLocale,
+  evaluateSpeechMatch,
 } from '../../services/audio/speechService';
 
 interface SpeakingGameProps {
@@ -30,6 +33,8 @@ interface RecordingEntry {
   audioUrl?: string;
   transcript?: string;
   evaluationMode: 'speech_recognition' | 'self_practice_recorded';
+  liveMatch?: boolean;
+  similarityPercent?: number;
   completed: boolean;
 }
 
@@ -75,8 +80,9 @@ export function SpeakingGame({
     setActiveRecQuestionId(null);
   };
 
-  const startRecording = async (questionId: number, targetPhrase: string) => {
+  const startRecording = async (questionId: number, targetPhrase: string, acceptedAnswers: string[] = []) => {
     setPermissionError(null);
+    if (submitResult && !submitResult.passed) setSubmitResult(null);
 
     if (activeRecQuestionId === questionId) {
       stopRecording();
@@ -96,17 +102,35 @@ export function SpeakingGame({
       chunksRef.current = [];
       let detectedTranscript = '';
 
-      // Optional browser speech recognition (labeled transparently)
       if (sttSupported) {
         const w = window as unknown as Record<string, any>;
         const RecCtor = w.SpeechRecognition || w.webkitSpeechRecognition;
         if (RecCtor) {
           const rec = new RecCtor();
-          rec.lang = 'id-ID';
+          rec.lang = resolveSpeechLocale(languageName);
           rec.interimResults = false;
-          rec.maxAlternatives = 1;
+          rec.maxAlternatives = 3;
           rec.onresult = (evt: any) => {
-            detectedTranscript = evt.results?.[0]?.[0]?.transcript || '';
+            const alts: string[] = [];
+            const res0 = evt.results?.[0];
+            if (res0) {
+              for (let i = 0; i < res0.length; i++) {
+                if (res0[i]?.transcript) alts.push(String(res0[i].transcript));
+              }
+            }
+            if (alts.length > 0) {
+              // Pick the alternative with the highest match to target phrase to avoid penalizing STT accents
+              let best = alts[0];
+              let bestScore = -1;
+              for (const alt of alts) {
+                const ev = evaluateSpeechMatch(alt, targetPhrase, acceptedAnswers);
+                if (ev.similarityPercent > bestScore) {
+                  bestScore = ev.similarityPercent;
+                  best = alt;
+                }
+              }
+              detectedTranscript = best;
+            }
           };
           rec.onerror = () => {};
           try {
@@ -129,17 +153,33 @@ export function SpeakingGame({
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(blob);
         stream.getTracks().forEach((t) => t.stop());
-        playSoundEffect('correct');
 
-        setRecordings((prev) => ({
-          ...prev,
-          [questionId]: {
-            audioUrl,
-            transcript: detectedTranscript || undefined,
-            evaluationMode: detectedTranscript ? 'speech_recognition' : 'self_practice_recorded',
-            completed: true,
-          },
-        }));
+        if (detectedTranscript) {
+          const evalRes = evaluateSpeechMatch(detectedTranscript, targetPhrase, acceptedAnswers);
+          playSoundEffect(evalRes.isMatch ? 'correct' : 'wrong');
+          setRecordings((prev) => ({
+            ...prev,
+            [questionId]: {
+              audioUrl,
+              transcript: detectedTranscript,
+              evaluationMode: 'speech_recognition',
+              liveMatch: evalRes.isMatch,
+              similarityPercent: evalRes.similarityPercent,
+              completed: true,
+            },
+          }));
+        } else {
+          playSoundEffect('click');
+          setRecordings((prev) => ({
+            ...prev,
+            [questionId]: {
+              audioUrl,
+              transcript: undefined,
+              evaluationMode: 'self_practice_recorded',
+              completed: true,
+            },
+          }));
+        }
       };
 
       setActiveRecQuestionId(questionId);
@@ -156,12 +196,15 @@ export function SpeakingGame({
 
   const markManualPractice = (questionId: number, targetPhrase: string) => {
     playSoundEffect('correct');
+    if (submitResult && !submitResult.passed) setSubmitResult(null);
     setRecordings((prev) => ({
       ...prev,
       [questionId]: {
         ...prev[questionId],
         transcript: `Latihan pelafalan mandiri: ${targetPhrase}`,
         evaluationMode: 'self_practice_recorded',
+        liveMatch: undefined,
+        similarityPercent: undefined,
         completed: true,
       },
     }));
@@ -188,15 +231,18 @@ export function SpeakingGame({
     }
   };
 
+  const resultMap = new Map<number, any>(
+    (submitResult?.results || []).map((r: any) => [r.questionId, r])
+  );
+
   return (
     <div className="space-y-5">
       {/* Honest Capability Banner */}
       <div className="p-4 rounded-2xl bg-tertiary-fixed/50 border border-tertiary-gold/40 flex items-start gap-3 text-xs sm:text-sm text-on-tertiary-fixed">
         <Info className="w-5 h-5 shrink-0 mt-0.5 text-tertiary" />
         <div>
-          <strong>Transparansi Evaluasi Pelafalan ({languageName}):</strong>{' '}
-          Mesin pengenalan suara otomatis browser belum memiliki model akustik khusus untuk seluruh bahasa daerah Indonesia. Oleh karena itu, LOGATARA menyediakan{' '}
-          <strong>Rekaman Suara & Perbandingan Pelafalan Mandiri</strong> agar kamu bisa merekam suaramu, memutarnya ulang, dan membandingkan langsung dengan contoh pelafalan baku tanpa penilaian palsu.
+          <strong>Koreksi Pelafalan ({languageName}):</strong>{' '}
+          Dengarkan contoh pelafalan, lalu rekam suaramu. Jika browser mendukung pengenalan suara, LOGATARA otomatis menilai kecocokan ucapanmu (Benar/Kurang Tepat). Jika perangkat belum mengenali dialek lokal, kamu tetap bisa menggunakan <strong>Konfirmasi Latihan Pelafalan Mandiri</strong>.
         </div>
       </div>
 
@@ -214,14 +260,48 @@ export function SpeakingGame({
       <div className="space-y-4">
         {activity.questions.map((q, idx) => {
           const rec = recordings[q.id];
+          const resItem = resultMap.get(q.id);
           const isRec = activeRecQuestionId === q.id;
+          const isCardCorrect = resItem ? resItem.isCorrect : rec?.liveMatch === true;
+          const isCardWrong = resItem ? !resItem.isCorrect : rec?.liveMatch === false;
+
           return (
-            <article key={q.id} className="storybook-card p-5 sm:p-6 space-y-4">
+            <article
+              key={q.id}
+              className={`storybook-card p-5 sm:p-6 space-y-4 border-2 transition-colors ${
+                isCardCorrect
+                  ? 'border-primary/35'
+                  : isCardWrong
+                    ? 'border-error/45'
+                    : 'border-transparent'
+              }`}
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-secondary-terracotta">
-                    Latihan Berbicara {idx + 1} dari {activity.questions.length}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-secondary-terracotta">
+                      Latihan Berbicara {idx + 1} dari {activity.questions.length}
+                    </span>
+                    {resItem && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          resItem.isCorrect
+                            ? 'bg-primary-fixed text-primary'
+                            : 'bg-error-container text-on-error-container'
+                        }`}
+                      >
+                        {resItem.isCorrect ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Benar
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" /> Kurang Tepat
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-on-surface-variant mt-1">{q.prompt}</p>
                   <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary mt-1.5">
                     "{q.regional_text}"
@@ -235,6 +315,7 @@ export function SpeakingGame({
                   type="button"
                   onClick={() =>
                     speakPhrase(q.regional_text, {
+                      languageName,
                       onStart: () => setPlayingId(q.id),
                       onEnd: () => setPlayingId(null),
                     })
@@ -252,8 +333,9 @@ export function SpeakingGame({
               <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-on-surface-bark/10">
                 <button
                   type="button"
-                  onClick={() => startRecording(q.id, q.regional_text)}
-                  className={`px-5 py-3 rounded-full font-display font-bold text-sm inline-flex items-center gap-2 transition-all shadow-md ${
+                  disabled={Boolean(submitResult?.passed)}
+                  onClick={() => startRecording(q.id, q.regional_text, q.accepted_answers)}
+                  className={`px-5 py-3 rounded-full font-display font-bold text-sm inline-flex items-center gap-2 transition-all shadow-md disabled:opacity-50 ${
                     isRec
                       ? 'bg-error text-white animate-pulse'
                       : 'btn-adventure'
@@ -272,7 +354,7 @@ export function SpeakingGame({
                   )}
                 </button>
 
-                {!rec?.completed && (
+                {(!rec?.completed || rec.liveMatch === false) && !submitResult?.passed && (
                   <button
                     type="button"
                     onClick={() => markManualPractice(q.id, q.regional_text)}
@@ -284,29 +366,48 @@ export function SpeakingGame({
                 )}
               </div>
 
-              {/* Playback User Recording + Feedback */}
+              {/* Playback User Recording + Instant Right/Wrong Feedback */}
               {rec && (
-                <div className="p-4 rounded-2xl bg-primary-fixed/40 border border-primary/20 space-y-2.5">
+                <div
+                  className={`p-4 rounded-2xl border space-y-2.5 ${
+                    isCardWrong
+                      ? 'bg-error-container/60 border-error/30'
+                      : 'bg-primary-fixed/40 border-primary/20'
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-xs font-bold ${
+                        isCardWrong ? 'text-on-error-container' : 'text-primary'
+                      }`}
+                    >
+                      {isCardWrong ? (
+                        <XCircle className="w-4 h-4 text-error" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                      )}
                       {rec.evaluationMode === 'speech_recognition'
-                        ? 'Terekam & Terdeteksi (Speech Recognition)'
+                        ? rec.liveMatch
+                          ? `Pelafalan Tepat! (${rec.similarityPercent ?? 100}% cocok)`
+                          : `Pelafalan Belum Tepat (${rec.similarityPercent ?? 0}% cocok)`
                         : 'Terekam (Evaluasi Pelafalan Mandiri)'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRecordings((prev) => {
-                          const next = { ...prev };
-                          delete next[q.id];
-                          return next;
-                        })
-                      }
-                      className="text-xs font-semibold text-on-surface-variant hover:text-primary inline-flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" /> Ulangi
-                    </button>
+                    {!submitResult?.passed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitResult(null);
+                          setRecordings((prev) => {
+                            const next = { ...prev };
+                            delete next[q.id];
+                            return next;
+                          });
+                        }}
+                        className="text-xs font-semibold text-on-surface-variant hover:text-primary inline-flex items-center gap-1"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" /> Ulangi
+                      </button>
+                    )}
                   </div>
 
                   {rec.audioUrl && (
@@ -318,9 +419,17 @@ export function SpeakingGame({
 
                   {rec.transcript && (
                     <p className="text-xs text-on-surface-bark">
-                      <strong>Catatan Latihan:</strong> "{rec.transcript}"
+                      <strong>{rec.evaluationMode === 'speech_recognition' ? 'Terdengar oleh sistem:' : 'Catatan Latihan:'}</strong>{' '}
+                      "{rec.transcript}"
                     </p>
                   )}
+
+                  {isCardWrong && (
+                    <p className="text-xs font-semibold text-on-error-container">
+                      Target bacaan: <strong>"{q.regional_text}"</strong> (/{q.pronunciation_guide}/). Tekan <strong>Dengar Contoh</strong> lalu <strong>Rekam Ulang</strong> untuk memperbaiki.
+                    </p>
+                  )}
+
                   <p className="text-xs text-on-surface-variant">{q.explanation}</p>
                 </div>
               )}
@@ -329,30 +438,50 @@ export function SpeakingGame({
         })}
       </div>
 
-      {/* Submit Result & Next Button */}
+      {/* Submit Result & Next / Retry Button */}
       {submitResult ? (
-        <div className="storybook-card p-5 bg-primary-fixed/50 border-primary/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div
+          className={`storybook-card p-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${
+            submitResult.passed ? 'bg-primary-fixed/50 border-primary/30' : 'bg-error-container/60 border-error/30'
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-8 h-8 text-primary shrink-0" />
+            {submitResult.passed ? (
+              <CheckCircle2 className="w-8 h-8 text-primary shrink-0" />
+            ) : (
+              <XCircle className="w-8 h-8 text-error shrink-0" />
+            )}
             <div>
-              <h4 className="font-display text-lg font-bold text-primary">
-                Aktivitas Berbicara Selesai! ({submitResult.scorePercent}%)
+              <h4 className="font-display text-lg font-bold text-on-surface">
+                Skor Berbicara: {submitResult.correctCount}/{submitResult.totalQuestions} ({submitResult.scorePercent}%)
               </h4>
               <p className="text-xs text-on-surface-variant">
-                {submitResult.xpAwarded > 0
-                  ? `+${submitResult.xpAwarded} XP ditambahkan ke akunmu!`
-                  : 'Latihan terekam! (XP aktivitas ini sudah tercatat sebelumnya.)'}
+                {submitResult.passed
+                  ? submitResult.xpAwarded > 0
+                    ? `Hebat! +${submitResult.xpAwarded} XP ditambahkan ke akunmu!`
+                    : 'Lulus! (XP aktivitas ini sudah tercatat sebelumnya.)'
+                  : 'Beberapa ucapan masih kurang tepat. Dengarkan contoh pelafalan dan coba rekam ulang!'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onNextTab}
-            className="btn-adventure px-6 py-3 text-sm inline-flex items-center gap-2"
-          >
-            <span>Lanjut ke Mendengarkan</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {submitResult.passed ? (
+            <button
+              type="button"
+              onClick={onNextTab}
+              className="btn-adventure px-6 py-3 text-sm inline-flex items-center gap-2"
+            >
+              <span>Lanjut ke Mendengarkan</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSubmitResult(null)}
+              className="btn-adventure px-6 py-3 text-sm"
+            >
+              Coba Lagi
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex justify-end">
@@ -362,7 +491,7 @@ export function SpeakingGame({
             onClick={handleSubmit}
             className="btn-adventure px-7 py-3.5 text-base inline-flex items-center gap-2 disabled:opacity-50"
           >
-            <span>{submitting ? 'Menyimpan Latihan...' : 'Simpan Hasil Berbicara'}</span>
+            <span>{submitting ? 'Memeriksa Pelafalan...' : 'Periksa & Simpan Hasil Berbicara'}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

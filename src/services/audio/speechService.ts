@@ -1,7 +1,19 @@
-// Browser Web Speech Synthesis + Web Audio API Sound Effects + Microphone Recording Helper
+// Browser Web Speech Synthesis + Web Audio API Sound Effects + Speech Similarity Helper
 // Gracefully degrades when speech voices or microphone permissions are unavailable.
 
 let audioCtx: AudioContext | null = null;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  const loadVoices = () => {
+    const v = window.speechSynthesis.getVoices();
+    if (v && v.length > 0) cachedVoices = v;
+  };
+  loadVoices();
+  if (typeof window.speechSynthesis.addEventListener === 'function') {
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+  }
+}
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -24,29 +36,38 @@ export function isSpeechRecognitionSupported(): boolean {
   return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
 }
 
-// Phonetic adjustments for browser id-ID TTS engines so regional words sound more natural
-// (e.g., Indonesian TTS often misreads "-es" in Sundanese "Rampes" as e-taling instead of e-pepet).
-const TTS_PRONUNCIATION_OVERRIDES: Array<[RegExp, string]> = [
-  [/\brampes\b/gi, 'rampes'],
-];
+export function resolveSpeechLocale(languageName?: string): string {
+  const ln = (languageName || '').toLowerCase();
+  if (ln.includes('sunda')) return 'su-ID';
+  if (ln.includes('jawa')) return 'jv-ID';
+  return 'id-ID';
+}
 
-function prepareSpeechText(rawText: string): string {
+// Keep authentic diacritics (especially Sundanese é taling on "Rampés" & "Badé")
+// so both native su-ID voices and id-ID fallback voices read them clearly.
+function prepareSpeechText(rawText: string, languageName?: string): string {
   let out = rawText.trim();
-  // Indonesian TTS engines frequently pronounce final "-es" as /ɛs/ (like "sukses"/"akses").
-  // For Sundanese "Rampes" (e pepet /rampəs/), "rampeus" / "rampês" guides id-ID speech synthesis closer to schwa.
-  if (/^rampes[!.,?]*$/i.test(out)) {
-    return 'rampeus';
+  const isSunda = (languageName || '').toLowerCase().includes('sunda');
+
+  // Ensure Sundanese "Rampés" always carries explicit é taling (never "rampeus" / e-pepet)
+  out = out.replace(/\brampes\b/gi, (m) => (m[0] === 'R' ? 'Rampés' : 'rampés'));
+
+  if (isSunda) {
+    out = out.replace(/\bbade\b/gi, (m) => (m[0] === 'B' ? 'Badé' : 'badé'));
   }
-  out = out.replace(/\brampes\b/gi, 'rampeus');
-  for (const [pattern, replacement] of TTS_PRONUNCIATION_OVERRIDES) {
-    out = out.replace(pattern, replacement);
-  }
+
   return out;
 }
 
 export function speakPhrase(
   text: string,
-  options: { rate?: number; onStart?: () => void; onEnd?: () => void; onError?: (reason: string) => void } = {}
+  options: {
+    languageName?: string;
+    rate?: number;
+    onStart?: () => void;
+    onEnd?: () => void;
+    onError?: (reason: string) => void;
+  } = {}
 ): boolean {
   if (!isSpeechSynthesisSupported()) {
     options.onError?.('Browser ini belum mendukung pemutaran suara sintesis (Web Speech API). Gunakan panduan pelafalan tertulis.');
@@ -55,14 +76,25 @@ export function speakPhrase(
 
   try {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(prepareSpeechText(text));
-    utterance.lang = 'id-ID';
-    utterance.rate = options.rate ?? 0.9;
-    utterance.pitch = 1.02;
+    const prepared = prepareSpeechText(text, options.languageName);
+    const utterance = new SpeechSynthesisUtterance(prepared);
 
-    const voices = window.speechSynthesis.getVoices();
+    const liveVoices = window.speechSynthesis.getVoices();
+    const voices = liveVoices.length > 0 ? liveVoices : cachedVoices;
+    const preferredLocale = resolveSpeechLocale(options.languageName);
+    const preferredPrefix = preferredLocale.split('-')[0].toLowerCase();
+
+    // Prefer native regional voice (e.g. su-ID for Basa Sunda, jv-ID for Basa Jawa) if installed,
+    // otherwise cleanly fall back to Indonesian (id-ID).
+    const nativeVoice = voices.find((v) => v.lang.toLowerCase().startsWith(preferredPrefix));
     const idVoice = voices.find((v) => v.lang.toLowerCase().startsWith('id'));
-    if (idVoice) utterance.voice = idVoice;
+    const chosenVoice = nativeVoice || idVoice || null;
+
+    utterance.lang = chosenVoice ? chosenVoice.lang : 'id-ID';
+    if (chosenVoice) utterance.voice = chosenVoice;
+
+    utterance.rate = options.rate ?? 0.88;
+    utterance.pitch = 1.0;
 
     utterance.onstart = () => options.onStart?.();
     utterance.onend = () => options.onEnd?.();
@@ -83,6 +115,93 @@ export function stopSpeaking() {
   if (isSpeechSynthesisSupported()) {
     window.speechSynthesis.cancel();
   }
+}
+
+function normalizeForSpeechCompare(str: string): string {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[?!.,'’"“”\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[] = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
+      prev = temp;
+    }
+  }
+  return dp[n];
+}
+
+/**
+ * Evaluates spoken Speech Recognition transcript against target regional phrase.
+ * Tolerates minor diacritic/spacing differences (e.g. "sampura sun" vs "Sampurasun", "rampes" vs "Rampés"),
+ * while clearly rejecting unrelated spoken words.
+ */
+export function evaluateSpeechMatch(
+  spokenText: string,
+  targetPhrase: string,
+  acceptedAnswers: string[] = []
+): { isMatch: boolean; similarityPercent: number } {
+  const spoken = normalizeForSpeechCompare(spokenText);
+  if (!spoken) return { isMatch: false, similarityPercent: 0 };
+
+  const candidates = [targetPhrase, ...acceptedAnswers]
+    .map(normalizeForSpeechCompare)
+    .filter(Boolean);
+
+  let bestScore = 0;
+  const spokenNoSpace = spoken.replace(/\s+/g, '');
+  const spokenWords = spoken.split(' ').filter(Boolean);
+
+  for (const target of candidates) {
+    if (spoken === target) return { isMatch: true, similarityPercent: 100 };
+
+    const targetNoSpace = target.replace(/\s+/g, '');
+    if (spokenNoSpace === targetNoSpace) return { isMatch: true, similarityPercent: 100 };
+
+    // Character-level Levenshtein similarity (collapsed spaces to forgive STT splitting compound regional words)
+    const maxLen = Math.max(spokenNoSpace.length, targetNoSpace.length);
+    const dist = levenshteinDistance(spokenNoSpace, targetNoSpace);
+    const charSim = maxLen > 0 ? Math.max(0, 1 - dist / maxLen) : 0;
+
+    // Word-level overlap similarity
+    const targetWords = target.split(' ').filter(Boolean);
+    let matchedWords = 0;
+    for (const tw of targetWords) {
+      if (
+        spokenWords.some((sw) => {
+          if (sw === tw || sw.includes(tw) || tw.includes(sw)) return true;
+          const d = levenshteinDistance(sw, tw);
+          return d <= Math.max(1, Math.floor(tw.length * 0.28));
+        })
+      ) {
+        matchedWords++;
+      }
+    }
+    const wordSim = targetWords.length > 0 ? matchedWords / targetWords.length : 0;
+
+    const combined = Math.round(Math.max(charSim, wordSim * 0.85 + charSim * 0.15) * 100);
+    if (combined > bestScore) bestScore = combined;
+  }
+
+  return {
+    isMatch: bestScore >= 62,
+    similarityPercent: bestScore,
+  };
 }
 
 // Gentle warm marimba/angklung-like sound effects using Web Audio API

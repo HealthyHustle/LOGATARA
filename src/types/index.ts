@@ -128,6 +128,7 @@ export interface ActivityQuestion {
   regional_text: string;
   pronunciation_guide: string;
   options: string[];
+  accepted_answers?: string[];
   correct_answer: string;
   explanation: string;
   difficulty: string;

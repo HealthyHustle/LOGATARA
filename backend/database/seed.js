@@ -58,26 +58,39 @@ export async function syncVerifiedDictionaries({ silent = false } = {}) {
     }
   }
 
-  // Ensure corrected Sundanese "Rampes" e-pepet pronunciation & notes stay synced in existing databases
+  // Ensure authoritative Sundanese "Rampés" (ᮛᮙ᮪ᮕᮦᮞ᮪ — é taling) spelling & notes stay synced in existing databases
   await execute(
-    `UPDATE vocabulary SET pronunciation = 'ram-pês (e pepet seperti "senang")'
-     WHERE regional_word = 'Rampes' AND pronunciation = 'ram-pés'`
+    `UPDATE vocabulary
+     SET regional_word = 'Rampés',
+         pronunciation = 'ram-pés (é taling seperti "sate")',
+         example_sentence = 'Rampés, mangga lebet.'
+     WHERE regional_word IN ('Rampes', 'Rampés')`
   );
   await execute(
-    `UPDATE questions SET pronunciation_guide = 'ram-pês (e pepet seperti "senang")',
-       explanation = REPLACE(explanation, '/ram-pés/', '/ram-pês (e pepet)/')
-     WHERE regional_text = 'Rampes' AND pronunciation_guide = 'ram-pés'`
+    `UPDATE questions
+     SET regional_text = 'Rampés',
+         pronunciation_guide = 'ram-pés (é taling seperti "sate")',
+         correct_answer = CASE WHEN correct_answer = 'Rampes' THEN 'Rampés' ELSE correct_answer END,
+         options_json = REPLACE(options_json, '"Rampes"', '"Rampés"'),
+         accepted_answers_json = '["rampés","rampes"]',
+         explanation = REPLACE(REPLACE(REPLACE(explanation, '/ram-pês (e pepet)/', '/ram-pés (é taling seperti "sate")/'), '/ram-pês (e pepet seperti "senang")/', '/ram-pés (é taling seperti "sate")/'), '"Rampes"', '"Rampés"')
+     WHERE regional_text IN ('Rampes', 'Rampés') OR correct_answer IN ('Rampes', 'Rampés')`
   );
   await execute(
     `UPDATE learning_modules
-     SET vocabulary_json = REPLACE(vocabulary_json, '"ram-pés"', '"ram-pês (e pepet seperti \\"senang\\")"'),
-         pronunciation_notes = 'Basa Sunda membedakan 3 bunyi vokal: "e" pepet (seperti "sepatu") pada kata "rampes", "wilujeng", dan "punten"; "é" taling (seperti "sate") pada "énjing" dan "pangéstu"; serta "eu" khas Sunda (bibir mendatar) pada "anjeun" dan "peuyeum".'
-     WHERE vocabulary_json LIKE '%"ram-pés"%'`
+     SET vocabulary_json = REPLACE(REPLACE(REPLACE(vocabulary_json, '"word":"Rampes"', '"word":"Rampés"'), '"ram-pês (e pepet seperti \\"senang\\")"', '"ram-pés (é taling seperti \\"sate\\")"'), '"ram-pés"', '"ram-pés (é taling seperti \\"sate\\")"'),
+         pronunciation_notes = 'Basa Sunda membedakan 3 bunyi vokal: "e" pepet (seperti "sepatu") pada kata "wilujeng", "punten", dan "lebet"; "é" taling (seperti "sate") pada "rampés", "énjing", dan "pangéstu"; serta "eu" khas Sunda (bibir mendatar) pada "anjeun" dan "peuyeum".'
+     WHERE vocabulary_json LIKE '%Rampes%' OR vocabulary_json LIKE '%Rampés%'`
+  );
+  await execute(
+    `UPDATE game_activities
+     SET story_json = REPLACE(REPLACE(story_json, 'Rampes', 'Rampés'), 'ram-pês (e pepet seperti \\"senang\\")', 'ram-pés (é taling seperti \\"sate\\")')
+     WHERE story_json LIKE '%Rampes%' OR story_json LIKE '%ram-pês%'`
   );
   await execute(
     `UPDATE regional_languages
-     SET pronunciation_information = 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "rampes" & "punten"), "é" taling (seperti "sate" pada "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").'
-     WHERE language_name = 'Basa Sunda' AND pronunciation_information LIKE '%"enak"%'`
+     SET pronunciation_information = 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "wilujeng" & "punten"), "é" taling (seperti "sate" pada "rampés" & "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").'
+     WHERE language_name = 'Basa Sunda'`
   );
   await execute(
     `UPDATE learning_modules

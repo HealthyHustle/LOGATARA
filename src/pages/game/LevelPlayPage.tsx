@@ -304,6 +304,7 @@ export function LevelPlayPage() {
         {activeTab === 'listening' && findAct('listening') && (
           <ListeningGame
             activity={findAct('listening')!}
+            languageName={level.language_name}
             onSubmitActivity={(ans) => handleSubmitActivity('listening', ans)}
             onNextTab={() => {
               setActiveTab('reading');
@@ -315,6 +316,7 @@ export function LevelPlayPage() {
         {activeTab === 'reading' && findAct('reading') && (
           <ReadingGame
             activity={findAct('reading')!}
+            languageName={level.language_name}
             onSubmitActivity={(ans) => handleSubmitActivity('reading', ans)}
             onNextTab={() => {
               setActiveTab('writing');

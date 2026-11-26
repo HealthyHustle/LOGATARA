@@ -27,6 +27,7 @@ export function LearningModuleView({
   const handlePlay = (text: string) => {
     setAudioWarning(null);
     speakPhrase(text, {
+      languageName,
       onStart: () => setSpeakingWord(text),
       onEnd: () => setSpeakingWord(null),
       onError: (msg) => {

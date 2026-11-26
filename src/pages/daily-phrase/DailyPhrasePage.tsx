@@ -105,6 +105,7 @@ export function DailyPhrasePage() {
                   type="button"
                   onClick={() =>
                     speakPhrase(todayPhrase.regional_phrase, {
+                      languageName: todayPhrase.language_name,
                       onStart: () => setSpeakingId(todayPhrase.id),
                       onEnd: () => setSpeakingId(null),
                     })
@@ -207,6 +208,7 @@ export function DailyPhrasePage() {
                   type="button"
                   onClick={() =>
                     speakPhrase(item.regional_phrase, {
+                      languageName: item.language_name,
                       onStart: () => setSpeakingId(item.id),
                       onEnd: () => setSpeakingId(null),
                     })

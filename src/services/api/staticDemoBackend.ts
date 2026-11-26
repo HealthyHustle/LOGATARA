@@ -2,6 +2,7 @@
 // Automatically mirrors the Express + SQLite backend using the exact same verified datasets
 // and persists users, sessions, progression, XP, stars, achievements, saved items, and chat in localStorage.
 
+import { evaluateSpeechMatch } from '../audio/speechService';
 import { PROVINCES, REGIONAL_LANGUAGES } from '../../../backend/database/data/provincesAndLanguages.js';
 import { LEVEL_BLUEPRINT, VERIFIED_LANGUAGE_PACKS } from '../../../backend/database/data/curriculumData.js';
 import {
@@ -863,7 +864,11 @@ export async function handleStaticApiRequest<T = any>(
       const mode = String(sub?.evaluationMode || 'exact');
       let isCorrect = false;
       if (actType === 'speaking') {
-        isCorrect = mode === 'self_practice_recorded' ? rawAns.length > 0 : normalizeStr(rawAns).length > 0;
+        if (mode === 'self_practice_recorded') {
+          isCorrect = rawAns.length > 0;
+        } else {
+          isCorrect = evaluateSpeechMatch(rawAns, q.correct_answer, q.accepted_answers || []).isMatch;
+        }
       } else {
         const candidates = [q.correct_answer, ...(q.accepted_answers || [])].map(normalizeStr);
         isCorrect = candidates.includes(normalizeStr(rawAns));

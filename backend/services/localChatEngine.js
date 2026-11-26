@@ -191,7 +191,7 @@ export function buildSmartLocalChatReply({
       const ln = langForRule.language_name.toLowerCase();
       if (ln.includes('sunda')) {
         extraRule =
-          '\n\n**Undak-Usuk Basa Sunda:**\n• **Lemes** (sopan/hormat): digunakan kepada orang lebih tua atau baru dikenal (mis. *Abdi*, *Wasta*, *Hatur nuhun*, *Punten*).\n• **Loma** (akrab): digunakan dengan teman sebaya (mis. *Kuring*, *Ngaran*, *Dahar*).\n• **3 Bunyi E:** `e` pepet (*rampes*, *wilujeng*, *punten*), `é` taling (*énjing*, *pangéstu*), dan `eu` (*anjeun*, *reueus*).';
+          '\n\n**Undak-Usuk Basa Sunda:**\n• **Lemes** (sopan/hormat): digunakan kepada orang lebih tua atau baru dikenal (mis. *Abdi*, *Wasta*, *Hatur nuhun*, *Punten*).\n• **Loma** (akrab): digunakan dengan teman sebaya (mis. *Kuring*, *Ngaran*, *Dahar*).\n• **3 Bunyi E:** `e` pepet (*wilujeng*, *punten*, *lebet*), `é` taling (*rampés*, *énjing*, *pangéstu*), dan `eu` (*anjeun*, *reueus*).';
       } else if (ln.includes('jawa')) {
         extraRule =
           '\n\n**Unggah-Ungguh Basa Jawa:**\n• **Ngoko** (akrab): untuk teman sebaya (*Piye kabare?*, *Jenengku*, *Tuku*).\n• **Krama / Krama Inggil** (hormat): untuk orang lebih tua atau baru dikenal (*Pripun kabaripun?*, *Nami kula*, *Tumbas*, *Matur nuwun*).';

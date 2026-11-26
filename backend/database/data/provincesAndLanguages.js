@@ -291,7 +291,7 @@ export const REGIONAL_LANGUAGES = [
     province_code: 'ID-JB',
     alternative_names: 'Sunda, Basa Sunda Loma & Lemes',
     language_description: 'Bahasa daerah masyarakat Tatar Sunda di Jawa Barat dengan tingkatan tutur Undak-Usuk Basa (Lemes dan Loma) yang santun dan merdu.',
-    pronunciation_information: 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "rampes" & "punten"), "é" taling (seperti "sate" pada "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").',
+    pronunciation_information: 'Perhatikan perbedaan 3 bunyi vokal: "e" pepet (seperti "sepatu"/"senang" pada kata "wilujeng" & "punten"), "é" taling (seperti "sate" pada "rampés" & "énjing"), dan "eu" khas Sunda (bibir mendatar seperti "anjeun" & "peuyeum").',
     verification_status: 'verified',
     source_metadata: 'Kamus Basa Sunda (R.A. Danadibrata) & Pedoman Balai Bahasa Jawa Barat',
     has_full_curriculum: 1,

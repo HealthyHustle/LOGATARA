@@ -23,7 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../services/api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import { speakPhrase } from '../../services/audio/speechService';
+import { speakPhrase, playSoundEffect } from '../../services/audio/speechService';
 import { assetUrl } from '../../utils/assets';
 import type { Achievement, RegionalLanguage } from '../../types';
 
@@ -102,6 +102,7 @@ export function ProfilePage() {
   const { refreshUser, logout } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editProfileSectionRef = useRef<HTMLElement>(null);
 
   const [data, setData] = useState<any>(null);
   const [allLanguages, setAllLanguages] = useState<RegionalLanguage[]>([]);
@@ -112,6 +113,7 @@ export function ProfilePage() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('/assets/characters/tara.png');
   const [avatarTab, setAvatarTab] = useState<'3d' | 'upload'>('3d');
+  const [highlightAvatarStudio, setHighlightAvatarStudio] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [targetLangId, setTargetLangId] = useState<number>(0);
   const [knownLangIds, setKnownLangIds] = useState<number[]>([]);
@@ -238,18 +240,29 @@ export function ProfilePage() {
       {/* Top Explorer Banner */}
       <section className="storybook-card p-6 sm:p-8 batik-watermark flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-          <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              playSoundEffect('click');
+              editProfileSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setHighlightAvatarStudio(true);
+              window.setTimeout(() => setHighlightAvatarStudio(false), 1800);
+            }}
+            aria-label="Ubah foto profil atau pilih karakter 3D"
+            title="Klik untuk mengganti foto profil"
+            className="relative shrink-0 group cursor-pointer rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-tertiary-gold"
+          >
             <img
               src={assetUrl(avatarUrl || '/assets/characters/tara.png')}
               alt={profile.full_name}
               width={96}
               height={96}
-              className="w-24 h-24 rounded-full object-cover border-4 border-tertiary-gold shadow-storybook bg-surface-ivory"
+              className="w-24 h-24 rounded-full object-cover border-4 border-tertiary-gold shadow-storybook bg-surface-ivory transition-transform group-hover:scale-[1.03] group-active:scale-95"
             />
-            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary text-white border-2 border-surface-ivory flex items-center justify-center shadow-sm">
+            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary group-hover:bg-primary-canopy text-white border-2 border-surface-ivory flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 group-active:scale-95">
               <Camera className="w-4 h-4" />
             </span>
-          </div>
+          </button>
           <div className="space-y-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary-fixed text-primary text-xs font-bold">
               Explorer Level {profile.current_level_number}
@@ -294,14 +307,24 @@ export function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Enhanced Edit Profile (Photo Upload + 3D Nusantara Avatars + Known & Learning Languages) */}
-        <section className="lg:col-span-5 storybook-card p-6 space-y-5">
+        <section
+          ref={editProfileSectionRef}
+          id="edit-profil-avatar"
+          className="lg:col-span-5 storybook-card p-6 space-y-5 scroll-mt-20"
+        >
           <h2 className="font-display text-2xl font-bold text-primary">
             Edit Profil & Foto Avatar
           </h2>
 
           <form onSubmit={handleSaveProfile} className="space-y-5">
             {/* Avatar Studio Picker */}
-            <div className="p-4 rounded-2xl bg-surface-low border border-on-surface-bark/10 space-y-3.5">
+            <div
+              className={`p-4 rounded-2xl bg-surface-low border space-y-3.5 transition-all duration-300 ${
+                highlightAvatarStudio
+                  ? 'border-tertiary-gold ring-2 ring-tertiary-gold/70 shadow-md bg-tertiary-fixed/25'
+                  : 'border-on-surface-bark/10'
+              }`}
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase text-on-surface-variant flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-secondary-terracotta" />
@@ -712,7 +735,7 @@ export function ProfilePage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={() => speakPhrase(v.regional_word)}
+                      onClick={() => speakPhrase(v.regional_word, { languageName: v.language_name })}
                       aria-label={`Putar ${v.regional_word}`}
                       className="p-2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed"
                     >

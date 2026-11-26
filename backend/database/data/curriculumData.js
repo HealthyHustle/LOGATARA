@@ -90,11 +90,11 @@ export const VERIFIED_LANGUAGE_PACKS = {
     culturalBadge: 'Tatar Sunda • Jawa Barat',
     levels: {
       1: {
-        culturalContext: 'Di Tatar Sunda, salam "Sampurasun" berasal dari "Sampura ning ingsun" (mohon maaf dari lubuk hati) dan dijawab "Rampes" yang bermakna baik atau setuju. Ini mencerminkan kerendahan hati masyarakat Sunda.',
-        pronunciationNotes: 'Basa Sunda membedakan 3 bunyi vokal: "e" pepet (seperti "sepatu") pada kata "rampes", "wilujeng", dan "punten"; "é" taling (seperti "sate") pada "énjing" dan "pangéstu"; serta "eu" khas Sunda (bibir mendatar) pada "anjeun" dan "peuyeum".',
+        culturalContext: 'Di Tatar Sunda, salam "Sampurasun" berasal dari "Sampura ning ingsun" (mohon maaf dari lubuk hati) dan dijawab "Rampés" yang bermakna baik, silakan, atau setuju. Ini mencerminkan kerendahan hati masyarakat Sunda.',
+        pronunciationNotes: 'Basa Sunda membedakan 3 bunyi vokal: "e" pepet (seperti "sepatu") pada kata "wilujeng", "punten", dan "lebet"; "é" taling (seperti "sate") pada "rampés", "énjing", dan "pangéstu"; serta "eu" khas Sunda (bibir mendatar) pada "anjeun" dan "peuyeum".',
         vocab: [
           { word: 'Sampurasun', meaning: 'Salam hormat / Permisi', pron: 'sam-pu-ra-sun', ex: 'Sampurasun, Ibu!', exTr: 'Salam hormat, Ibu!', register: 'Lemes' },
-          { word: 'Rampes', meaning: 'Jawaban salam Sampurasun', pron: 'ram-pês (e pepet seperti "senang")', ex: 'Rampes, mangga lebet.', exTr: 'Salam kembali, silakan masuk.', register: 'Lemes' },
+          { word: 'Rampés', meaning: 'Jawaban salam Sampurasun', pron: 'ram-pés (é taling seperti "sate")', ex: 'Rampés, mangga lebet.', exTr: 'Salam kembali, silakan masuk.', register: 'Lemes' },
           { word: 'Wilujeng énjing', meaning: 'Selamat pagi', pron: 'wi-lu-jeng é-njing', ex: 'Wilujeng énjing, Pak Guru.', exTr: 'Selamat pagi, Pak Guru.', register: 'Lemes' },
           { word: 'Kumaha damang?', meaning: 'Bagaimana kabarmu?', pron: 'ku-ma-ha da-mang', ex: 'Kumaha damang, Kang?', exTr: 'Bagaimana kabarmu, Kak?', register: 'Lemes' },
           { word: 'Pangéstu', meaning: 'Alhamdulillah baik / sehat', pron: 'pa-ngés-tu', ex: 'Pangéstu, hatur nuhun.', exTr: 'Baik sekali, terima kasih.', register: 'Lemes' },
@@ -103,12 +103,12 @@ export const VERIFIED_LANGUAGE_PACKS = {
         storyTitle: 'Pagi Cerah di Balai Desa',
         storyParagraphs: [
           'Matahari pagi menyinari atap kayu Balai Desa. Tara berjalan mendekati Ibu Lurah sambil tersenyum ramah. "Sampurasun, Ibu! Wilujeng énjing," sapa Tara dengan sopan.',
-          'Ibu Lurah menjawab hangat, "Rampes, Tara! Kumaha damang?" Tara mengangguk ceria, "Pangéstu, Bu. Hatur nuhun tos nampi abdi di Kampung Nusantara."',
+          'Ibu Lurah menjawab hangat, "Rampés, Tara! Kumaha damang?" Tara mengangguk ceria, "Pangéstu, Bu. Hatur nuhun tos nampi abdi di Kampung Nusantara."',
         ],
         readingQuestion: 'Apa jawaban sopan yang diucapkan Ibu Lurah ketika Tara mengucapkan "Sampurasun"?',
-        readingOptions: ['Rampes', 'Hatur nuhun', 'Wilujeng wengi', 'Punten'],
-        readingAnswer: 'Rampes',
-        readingExplanation: 'Salam "Sampurasun" dalam budaya Sunda secara tradisional dijawab dengan "Rampes".',
+        readingOptions: ['Rampés', 'Hatur nuhun', 'Wilujeng wengi', 'Punten'],
+        readingAnswer: 'Rampés',
+        readingExplanation: 'Salam "Sampurasun" dalam budaya Sunda secara tradisional dijawab dengan "Rampés" (dibaca /ram-pés/, dengan é taling seperti "sate").',
       },
       2: {
         culturalContext: 'Saat memperkenalkan diri dalam Basa Sunda Lemes, gunakan "Abdi" (saya) dan "Wasta abdi" (nama saya) sebagai wujud kesantunan kepada orang yang baru dikenal.',
@@ -136,7 +136,7 @@ export const VERIFIED_LANGUAGE_PACKS = {
         pronunciationNotes: 'Perhatikan "tuang" (makan untuk orang lain, lemes) dan "neda" (makan untuk diri sendiri, lemes). Dalam keseharian loma sering dipakai "dahar".',
         vocab: [
           { word: 'Mangga', meaning: 'Silakan / Mari', pron: 'mang-ga', ex: 'Mangga calik heula!', exTr: 'Silakan duduk dulu!', register: 'Lemes' },
-          { word: 'Bade ka mana?', meaning: 'Mau pergi ke mana?', pron: 'ba-dé ka ma-na', ex: 'Kang, bade ka mana?', exTr: 'Kak, mau pergi ke mana?', register: 'Lemes' },
+          { word: 'Badé ka mana?', meaning: 'Mau pergi ke mana?', pron: 'ba-dé ka ma-na', ex: 'Kang, badé ka mana?', exTr: 'Kak, mau pergi ke mana?', register: 'Lemes' },
           { word: 'Neda', meaning: 'Makan (untuk diri sendiri)', pron: 'ne-da', ex: 'Abdi parantos neda.', exTr: 'Saya sudah makan.', register: 'Lemes' },
           { word: 'Eueut', meaning: 'Minum', pron: 'eu-eut', ex: 'Mangga eueut cai téh haneut.', exTr: 'Silakan minum teh hangat.', register: 'Lemes' },
           { word: 'Calik', meaning: 'Duduk', pron: 'ca-lik', ex: 'Mangga calik di teras.', exTr: 'Silakan duduk di teras.', register: 'Lemes' },

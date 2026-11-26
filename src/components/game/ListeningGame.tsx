@@ -5,6 +5,7 @@ import { speakPhrase, playSoundEffect } from '../../services/audio/speechService
 
 interface ListeningGameProps {
   activity: GameActivity;
+  languageName?: string;
   onSubmitActivity: (
     answers: Array<{ questionId: number; answer: string; evaluationMode: string }>
   ) => Promise<any>;
@@ -13,6 +14,7 @@ interface ListeningGameProps {
 
 export function ListeningGame({
   activity,
+  languageName,
   onSubmitActivity,
   onNextTab,
 }: ListeningGameProps) {
@@ -36,7 +38,8 @@ export function ListeningGame({
     setAudioFallbackMsg(null);
     const key = `${qId}-${slow ? 'slow' : 'norm'}`;
     speakPhrase(text, {
-      rate: slow ? 0.68 : 0.92,
+      languageName,
+      rate: slow ? 0.68 : 0.9,
       onStart: () => setPlayingKey(key),
       onEnd: () => setPlayingKey(null),
       onError: (msg) => {

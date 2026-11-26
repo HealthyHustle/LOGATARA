@@ -5,13 +5,14 @@ import { speakPhrase, playSoundEffect } from '../../services/audio/speechService
 
 interface ReadingGameProps {
   activity: GameActivity;
+  languageName?: string;
   onSubmitActivity: (
     answers: Array<{ questionId: number; answer: string; evaluationMode: string }>
   ) => Promise<any>;
   onNextTab: () => void;
 }
 
-export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGameProps) {
+export function ReadingGame({ activity, languageName, onSubmitActivity, onNextTab }: ReadingGameProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [activeHighlight, setActiveHighlight] = useState<{
     word: string;
@@ -116,7 +117,7 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
               </div>
               <button
                 type="button"
-                onClick={() => speakPhrase(activeHighlight.word)}
+                onClick={() => speakPhrase(activeHighlight.word, { languageName })}
                 className="btn-foliage px-4 py-2 text-xs inline-flex items-center gap-1.5"
               >
                 <Volume2 className="w-4 h-4" />
@@ -140,14 +141,44 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
         {activity.questions.map((q, idx) => {
           const resItem = resultMap.get(q.id);
           return (
-            <article key={q.id} className="storybook-card p-5 sm:p-6 space-y-4">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary-terracotta">
-                  Pertanyaan Pemahaman {idx + 1} dari {activity.questions.length}
-                </span>
-                <h4 className="font-display text-lg sm:text-xl font-bold text-on-surface mt-1">
-                  {q.prompt}
-                </h4>
+            <article
+              key={q.id}
+              className={`storybook-card p-5 sm:p-6 space-y-4 border-2 transition-colors ${
+                resItem
+                  ? resItem.isCorrect
+                    ? 'border-primary/40'
+                    : 'border-error/45'
+                  : 'border-transparent'
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-secondary-terracotta">
+                    Pertanyaan Pemahaman {idx + 1} dari {activity.questions.length}
+                  </span>
+                  <h4 className="font-display text-lg sm:text-xl font-bold text-on-surface mt-1">
+                    {q.prompt}
+                  </h4>
+                </div>
+                {resItem && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
+                      resItem.isCorrect
+                        ? 'bg-primary-fixed text-primary'
+                        : 'bg-error-container text-on-error-container'
+                    }`}
+                  >
+                    {resItem.isCorrect ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" /> Benar
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4" /> Salah
+                      </>
+                    )}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -163,6 +194,7 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
                       disabled={Boolean(result?.passed)}
                       onClick={() => {
                         playSoundEffect('click');
+                        if (result && !result.passed) setResult(null);
                         setSelectedAnswers((prev) => ({ ...prev, [q.id]: opt }));
                       }}
                       className={`p-4 rounded-2xl border-2 text-left font-semibold text-sm transition-all flex items-center justify-between gap-2 ${
@@ -185,14 +217,26 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
 
               {resItem && (
                 <div
-                  className={`p-3.5 rounded-2xl text-xs sm:text-sm font-medium ${
+                  className={`p-3.5 rounded-2xl text-xs sm:text-sm font-medium flex items-start gap-2.5 ${
                     resItem.isCorrect
                       ? 'bg-primary-fixed/50 text-primary'
                       : 'bg-error-container/70 text-on-error-container'
                   }`}
                 >
-                  <strong>{resItem.isCorrect ? 'Tepat sekali!' : 'Kurang tepat.'}</strong>{' '}
-                  {resItem.explanation}
+                  {resItem.isCorrect ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+                  ) : (
+                    <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-error" />
+                  )}
+                  <div>
+                    <strong>{resItem.isCorrect ? 'Benar!' : 'Kurang tepat.'}</strong>{' '}
+                    {!resItem.isCorrect && (
+                      <span>
+                        Jawaban yang tepat adalah <strong>"{resItem.correctAnswer}"</strong>.{' '}
+                      </span>
+                    )}
+                    {resItem.explanation}
+                  </div>
                 </div>
               )}
             </article>
@@ -204,20 +248,27 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
       {result ? (
         <div
           className={`storybook-card p-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${
-            result.passed ? 'bg-primary-fixed/50 border-primary/30' : 'bg-error-container/60'
+            result.passed ? 'bg-primary-fixed/50 border-primary/30' : 'bg-error-container/60 border-error/30'
           }`}
         >
-          <div>
-            <h4 className="font-display text-lg font-bold text-on-surface">
-              Skor Membaca: {result.correctCount}/{result.totalQuestions} ({result.scorePercent}%)
-            </h4>
-            <p className="text-xs text-on-surface-variant">
-              {result.passed
-                ? result.xpAwarded > 0
-                  ? `Keren! +${result.xpAwarded} XP ditambahkan.`
-                  : 'Lulus! (XP aktivitas sudah tercatat sebelumnya.)'
-                : 'Yuk baca ulang cerita dengan saksama dan coba lagi!'}
-            </p>
+          <div className="flex items-center gap-3">
+            {result.passed ? (
+              <CheckCircle2 className="w-7 h-7 text-primary shrink-0" />
+            ) : (
+              <XCircle className="w-7 h-7 text-error shrink-0" />
+            )}
+            <div>
+              <h4 className="font-display text-lg font-bold text-on-surface">
+                Skor Membaca: {result.correctCount}/{result.totalQuestions} ({result.scorePercent}%)
+              </h4>
+              <p className="text-xs text-on-surface-variant">
+                {result.passed
+                  ? result.xpAwarded > 0
+                    ? `Keren! +${result.xpAwarded} XP ditambahkan.`
+                    : 'Lulus! (XP aktivitas sudah tercatat sebelumnya.)'
+                  : 'Yuk baca ulang cerita dengan saksama dan perbaiki jawaban yang salah!'}
+              </p>
+            </div>
           </div>
           {result.passed ? (
             <button
@@ -231,7 +282,17 @@ export function ReadingGame({ activity, onSubmitActivity, onNextTab }: ReadingGa
           ) : (
             <button
               type="button"
-              onClick={() => setResult(null)}
+              onClick={() => {
+                // Keep correct answers, clear wrong answers so user retries cleanly
+                setSelectedAnswers((prev) => {
+                  const next = { ...prev };
+                  for (const r of result.results || []) {
+                    if (!r.isCorrect) delete next[r.questionId];
+                  }
+                  return next;
+                });
+                setResult(null);
+              }}
               className="btn-adventure px-6 py-3 text-sm"
             >
               Coba Lagi

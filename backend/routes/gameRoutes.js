@@ -19,6 +19,46 @@ function normalizeAnswer(str) {
     .trim();
 }
 
+function levenshtein(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
+      prev = temp;
+    }
+  }
+  return dp[n];
+}
+
+function isSpokenMatch(normalizedSubmitted, candidates) {
+  if (!normalizedSubmitted) return false;
+  const spokenNoSpace = normalizedSubmitted.replace(/\s+/g, '');
+  const spokenWords = normalizedSubmitted.split(' ').filter(Boolean);
+  for (const target of candidates) {
+    if (!target) continue;
+    if (normalizedSubmitted === target) return true;
+    const targetNoSpace = target.replace(/\s+/g, '');
+    if (spokenNoSpace === targetNoSpace) return true;
+    const maxLen = Math.max(spokenNoSpace.length, targetNoSpace.length);
+    const charSim = maxLen > 0 ? Math.max(0, 1 - levenshtein(spokenNoSpace, targetNoSpace) / maxLen) : 0;
+    const targetWords = target.split(' ').filter(Boolean);
+    const matched = targetWords.filter((tw) =>
+      spokenWords.some((sw) => sw === tw || sw.includes(tw) || tw.includes(sw) || levenshtein(sw, tw) <= Math.max(1, Math.floor(tw.length * 0.28)))
+    );
+    const wordSim = targetWords.length > 0 ? matched.length / targetWords.length : 0;
+    if (Math.max(charSim, wordSim * 0.85 + charSim * 0.15) >= 0.62) return true;
+  }
+  return false;
+}
+
 const VILLAGE_LOCATIONS = [
   {
     id: 'balai-desa',
@@ -579,10 +619,8 @@ router.post('/levels/:levelId/activities/:activityType/submit', requireAuth, asy
           // Honest self-evaluated audio recording practice when browser STT does not support regional language
           isCorrect = true;
         } else {
-          // Compare speech transcript generously against target phrase words
-          const targetWords = normalizeAnswer(q.correct_answer).split(' ').filter(Boolean);
-          const matchedWords = targetWords.filter((w) => normalizedSubmitted.includes(w));
-          isCorrect = targetWords.length > 0 && matchedWords.length / targetWords.length >= 0.5;
+          const candidates = [q.correct_answer, ...accepted].map(normalizeAnswer);
+          isCorrect = isSpokenMatch(normalizedSubmitted, candidates);
         }
       } else {
         const candidates = [q.correct_answer, ...accepted].map(normalizeAnswer);
