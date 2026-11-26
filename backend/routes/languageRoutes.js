@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../database/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { ensureLanguageProgress } from '../services/rewardsService.js';
+import { logUserEventLive } from '../services/userEventLogger.js';
 
 const router = Router();
 
@@ -156,6 +157,26 @@ router.post('/onboarding', requireAuth, async (req, res, next) => {
        WHERE user_id = ?`,
       [targetLanguageId, Number(highestOpen?.max_lv || 1), userId]
     );
+
+    const knownLangRows = await queryAll(
+      `SELECT rl.language_name FROM user_known_languages ukl
+       JOIN regional_languages rl ON rl.id = ukl.language_id
+       WHERE ukl.user_id = ?`,
+      [userId]
+    );
+    logUserEventLive({
+      event: 'ONBOARDING',
+      userId,
+      fullName: req.user.full_name,
+      email: req.user.email,
+      status: 'BERHASIL',
+      knownLanguages: knownLangRows.map((k) => k.language_name).join(', ') || '-',
+      targetLanguage: targetLang.language_name,
+      currentLevel: Number(highestOpen?.max_lv || 1),
+      totalXp: Number(req.user.total_xp || 0),
+      source: req.get('origin') || 'Localhost',
+      userAgent: req.get('user-agent') || '',
+    });
 
     res.json({
       message: 'Preferensi bahasa berhasil disimpan! Petualangan Kampung Nusantara siap dimulai.',

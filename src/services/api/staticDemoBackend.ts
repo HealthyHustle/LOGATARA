@@ -19,6 +19,84 @@ const STORAGE_KEY = 'logatara_static_store_v1';
 const N8N_AI_WEBHOOK_URL = (
   import.meta.env.VITE_N8N_AI_WEBHOOK_URL ?? 'https://dpwppijabar.app.n8n.cloud/webhook/logatara-ai'
 ).trim();
+const N8N_USER_EVENTS_WEBHOOK_URL = (
+  import.meta.env.VITE_N8N_USER_EVENTS_WEBHOOK_URL ?? 'https://dpwppijabar.app.n8n.cloud/webhook/logatara-user-events'
+).trim();
+
+function formatBrowserWibTimestamp(): string {
+  try {
+    return (
+      new Date().toLocaleString('sv-SE', {
+        timeZone: 'Asia/Jakarta',
+        hour12: false,
+      }) + ' WIB'
+    );
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
+function summarizeBrowserAgent(): string {
+  if (typeof navigator === 'undefined') return 'Browser';
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|iPhone|iPad|Mobile/i.test(ua);
+  const os = /Android/i.test(ua)
+    ? 'Android'
+    : /iPhone|iPad|iOS/i.test(ua)
+      ? 'iOS'
+      : /Windows/i.test(ua)
+        ? 'Windows'
+        : /Mac OS/i.test(ua)
+          ? 'macOS'
+          : 'Other';
+  const browser = /Edg\//i.test(ua)
+    ? 'Edge'
+    : /Chrome\//i.test(ua)
+      ? 'Chrome'
+      : /Firefox\//i.test(ua)
+        ? 'Firefox'
+        : /Safari\//i.test(ua)
+          ? 'Safari'
+          : 'Browser';
+  return `${isMobile ? 'Mobile' : 'Desktop'} ${browser} / ${os}`;
+}
+
+function sendStaticUserEventToN8n(params: {
+  event: 'REGISTER' | 'LOGIN' | 'LOGIN_FAILED' | 'ONBOARDING';
+  userId?: number;
+  fullName?: string;
+  email: string;
+  status: 'BERHASIL' | 'GAGAL';
+  knownLanguages?: string;
+  targetLanguage?: string;
+  currentLevel?: number;
+  totalXp?: number;
+}) {
+  if (!N8N_USER_EVENTS_WEBHOOK_URL || typeof fetch === 'undefined') return;
+  const payload = {
+    timestamp: formatBrowserWibTimestamp(),
+    event: params.event,
+    userId: Number(params.userId || 0),
+    fullName: String(params.fullName || '-'),
+    email: String(params.email || '-'),
+    status: params.status,
+    knownLanguages: String(params.knownLanguages || '-'),
+    targetLanguage: String(params.targetLanguage || '-'),
+    currentLevel: Number(params.currentLevel || 1),
+    totalXp: Number(params.totalXp || 0),
+    source: typeof window !== 'undefined' && window.location.hostname.endsWith('github.io') ? 'GitHub Pages' : 'Static Browser',
+    userAgent: summarizeBrowserAgent(),
+  };
+
+  fetch(N8N_USER_EVENTS_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => {
+    // Non-blocking telemetry: never interrupt user login/register flow
+  });
+}
 
 function extractN8nReply(data: any): string {
   if (typeof data === 'string') return data.trim();
@@ -644,6 +722,19 @@ export async function handleStaticApiRequest<T = any>(
     store.users.push(newUser);
     store.currentUserId = newUser.id;
     saveStore(store);
+
+    sendStaticUserEventToN8n({
+      event: 'REGISTER',
+      userId: newUser.id,
+      fullName: newUser.full_name,
+      email: newUser.email,
+      status: 'BERHASIL',
+      knownLanguages: '-',
+      targetLanguage: defaultLang?.language_name || '-',
+      currentLevel: 1,
+      totalXp: 0,
+    });
+
     return { message: 'Pendaftaran berhasil!', token: `static_${newUser.id}`, user: newUser } as T;
   }
 
@@ -652,9 +743,37 @@ export async function handleStaticApiRequest<T = any>(
     const password = String(body.password || '');
     const hash = await sha256Hex(`${email}:${password}`);
     const user = store.users.find((u) => u.email === email && u.password_hash === hash);
-    if (!user) throw makeError('Email atau kata sandi salah. Periksa kembali dan coba lagi.', 401);
+    if (!user) {
+      sendStaticUserEventToN8n({
+        event: 'LOGIN_FAILED',
+        userId: 0,
+        fullName: '-',
+        email,
+        status: 'GAGAL',
+      });
+      throw makeError('Email atau kata sandi salah. Periksa kembali dan coba lagi.', 401);
+    }
     store.currentUserId = user.id;
     saveStore(store);
+
+    const knownNames = (user.known_language_ids || [])
+      .map((id: number) => cat.languages.find((l: any) => l.id === id)?.language_name)
+      .filter(Boolean)
+      .join(', ');
+    const targetName = cat.languages.find((l: any) => l.id === user.current_language_id)?.language_name || '-';
+
+    sendStaticUserEventToN8n({
+      event: 'LOGIN',
+      userId: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      status: 'BERHASIL',
+      knownLanguages: knownNames || '-',
+      targetLanguage: targetName,
+      currentLevel: user.current_level_number || 1,
+      totalXp: user.total_xp || 0,
+    });
+
     return { message: 'Berhasil masuk!', token: `static_${user.id}`, user } as T;
   }
 
@@ -715,6 +834,25 @@ export async function handleStaticApiRequest<T = any>(
     user.onboarding_completed = true;
     ensureProgressForLang(store, user.id, targetId);
     saveStore(store);
+
+    const knownNames = (user.known_language_ids || [])
+      .map((id: number) => cat.languages.find((l: any) => l.id === id)?.language_name)
+      .filter(Boolean)
+      .join(', ');
+    const targetName = cat.languages.find((l: any) => l.id === targetId)?.language_name || '-';
+
+    sendStaticUserEventToN8n({
+      event: 'ONBOARDING',
+      userId: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      status: 'BERHASIL',
+      knownLanguages: knownNames || '-',
+      targetLanguage: targetName,
+      currentLevel: user.current_level_number || 1,
+      totalXp: user.total_xp || 0,
+    });
+
     return { message: 'Preferensi bahasa berhasil disimpan!', currentLanguageId: targetId } as T;
   }
 

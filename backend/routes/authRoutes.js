@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { queryOne, execute } from '../database/db.js';
+import { queryAll, queryOne, execute } from '../database/db.js';
 import {
   hashPassword,
   verifyPassword,
@@ -9,6 +9,7 @@ import {
   requireAuth,
 } from '../middleware/auth.js';
 import { getTodayIsoDate } from '../services/rewardsService.js';
+import { logUserEventLive } from '../services/userEventLogger.js';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.post('/register', async (req, res, next) => {
 
     // Default initial language to first verified language (Basa Sunda) until onboarding updates it
     const defaultLang = await queryOne(
-      "SELECT id FROM regional_languages WHERE has_full_curriculum = 1 ORDER BY id ASC LIMIT 1"
+      "SELECT id, language_name FROM regional_languages WHERE has_full_curriculum = 1 ORDER BY id ASC LIMIT 1"
     );
 
     await execute(
@@ -64,6 +65,20 @@ router.post('/register', async (req, res, next) => {
        FROM users u JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ?`,
       [userId]
     );
+
+    logUserEventLive({
+      event: 'REGISTER',
+      userId,
+      fullName,
+      email,
+      status: 'BERHASIL',
+      knownLanguages: '-',
+      targetLanguage: defaultLang?.language_name || '-',
+      currentLevel: 1,
+      totalXp: 0,
+      source: req.get('origin') || 'Localhost',
+      userAgent: req.get('user-agent') || '',
+    });
 
     res.status(201).json({
       message: 'Pendaftaran berhasil! Selamat datang di LOGATARA.',
@@ -89,6 +104,15 @@ router.post('/login', async (req, res, next) => {
 
     const userRow = await queryOne('SELECT id, email, password_hash FROM users WHERE LOWER(email) = ?', [email]);
     if (!userRow || !verifyPassword(password, userRow.password_hash)) {
+      logUserEventLive({
+        event: 'LOGIN_FAILED',
+        userId: userRow?.id || 0,
+        fullName: '-',
+        email,
+        status: 'GAGAL',
+        source: req.get('origin') || 'Localhost',
+        userAgent: req.get('user-agent') || '',
+      });
       return res.status(401).json({ error: 'Email atau kata sandi salah. Periksa kembali dan coba lagi.' });
     }
 
@@ -102,6 +126,30 @@ router.post('/login', async (req, res, next) => {
        FROM users u JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ?`,
       [userRow.id]
     );
+
+    const knownLangs = await queryAll(
+      `SELECT rl.language_name FROM user_known_languages ukl
+       JOIN regional_languages rl ON rl.id = ukl.language_id
+       WHERE ukl.user_id = ?`,
+      [userRow.id]
+    );
+    const targetLang = profile.current_language_id
+      ? await queryOne('SELECT language_name FROM regional_languages WHERE id = ?', [profile.current_language_id])
+      : null;
+
+    logUserEventLive({
+      event: 'LOGIN',
+      userId: userRow.id,
+      fullName: profile.full_name,
+      email: userRow.email,
+      status: 'BERHASIL',
+      knownLanguages: knownLangs.map((k) => k.language_name).join(', ') || '-',
+      targetLanguage: targetLang?.language_name || '-',
+      currentLevel: profile.current_level_number || 1,
+      totalXp: profile.total_xp || 0,
+      source: req.get('origin') || 'Localhost',
+      userAgent: req.get('user-agent') || '',
+    });
 
     res.json({
       message: 'Berhasil masuk ke LOGATARA!',
