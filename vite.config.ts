@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 const isGhPages = process.env.VITE_GH_PAGES === 'true';
+const ghPagesBase = process.env.VITE_BASE_PATH || '/LOGATARA/';
 
 export default defineConfig({
-  base: isGhPages ? '/BUDAYAGO/' : '/',
+  base: isGhPages ? ghPagesBase : '/',
   plugins: [react()],
   resolve: {
     alias: {

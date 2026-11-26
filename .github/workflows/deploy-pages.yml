@@ -30,9 +30,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build production bundle for GitHub Pages (/BUDAYAGO/)
+      - name: Build production bundle for GitHub Pages
         env:
           VITE_GH_PAGES: 'true'
+          VITE_BASE_PATH: '/${{ github.event.repository.name }}/'
         run: npm run build
 
       - name: Add SPA 404 fallback
